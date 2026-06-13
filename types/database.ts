@@ -2,7 +2,12 @@ export type StoryCategory = "historia" | "legenda" | "muisto";
 
 export type SuggestionStatus = "pending" | "approved" | "rejected";
 
-export interface GameBoard {
+// HUOM: nämä on määriteltävä `type`-aliaksina, EI `interface`-muodossa.
+// Interface ei ole yhteensopiva Record<string, unknown>:n kanssa (ei implisiittistä
+// index-signaturea), jolloin supabase-js:n GenericSchema-rajoite ei täyty ja
+// taulutyypit resolvoituvat `never`:ksi.
+
+export type GameBoard = {
   id: string;
   name: string;
   description: string | null;
@@ -13,9 +18,9 @@ export interface GameBoard {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
-}
+};
 
-export interface Story {
+export type Story = {
   id: string;
   board_id: string;
   title: string;
@@ -29,9 +34,9 @@ export interface Story {
   external_link: string | null;
   created_by: string | null;
   created_at: string;
-}
+};
 
-export interface Profile {
+export type Profile = {
   id: string;
   username: string;
   avatar_url: string | null;
@@ -40,16 +45,16 @@ export interface Profile {
   distance_cycled_meters: number;
   tutorial_seen: boolean;
   created_at: string;
-}
+};
 
-export interface DiscoveredStory {
+export type DiscoveredStory = {
   id: string;
   user_id: string;
   story_id: string;
   discovered_at: string;
-}
+};
 
-export interface StorySuggestion {
+export type StorySuggestion = {
   id: string;
   board_id: string;
   suggested_by: string;
@@ -61,44 +66,108 @@ export interface StorySuggestion {
   status: SuggestionStatus;
   xp_bonus_given: boolean;
   created_at: string;
-}
+};
 
-export interface Database {
+// --- Insert-tyypit ---
+
+export type GameBoardInsert = {
+  id?: string;
+  name: string;
+  description?: string | null;
+  center_lat: number;
+  center_lng: number;
+  radius_meters: number;
+  boundary?: unknown | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  created_at?: string;
+};
+
+export type StoryInsert = {
+  id?: string;
+  board_id: string;
+  title: string;
+  content: string;
+  lat: number;
+  lng: number;
+  category: StoryCategory;
+  xp_reward: number;
+  discovery_radius_meters: number;
+  image_url?: string | null;
+  external_link?: string | null;
+  created_by?: string | null;
+  created_at?: string;
+};
+
+export type ProfileInsert = {
+  id: string;
+  username: string;
+  avatar_url?: string | null;
+  total_xp?: number;
+  distance_walked_meters?: number;
+  distance_cycled_meters?: number;
+  tutorial_seen?: boolean;
+  created_at?: string;
+};
+
+export type DiscoveredStoryInsert = {
+  id?: string;
+  user_id: string;
+  story_id: string;
+  discovered_at?: string;
+};
+
+export type StorySuggestionInsert = {
+  id?: string;
+  board_id: string;
+  suggested_by: string;
+  title: string;
+  description: string;
+  lat: number;
+  lng: number;
+  category: StoryCategory;
+  status?: SuggestionStatus;
+  xp_bonus_given?: boolean;
+  created_at?: string;
+};
+
+export type Database = {
   public: {
     Tables: {
       game_boards: {
         Row: GameBoard;
-        Insert: Omit<GameBoard, "id" | "created_at"> &
-          Partial<Pick<GameBoard, "id" | "created_at">>;
-        Update: Partial<GameBoard>;
+        Insert: GameBoardInsert;
+        Update: Partial<GameBoardInsert>;
+        Relationships: [];
       };
       stories: {
         Row: Story;
-        Insert: Omit<Story, "id" | "created_at"> &
-          Partial<Pick<Story, "id" | "created_at">>;
-        Update: Partial<Story>;
+        Insert: StoryInsert;
+        Update: Partial<StoryInsert>;
+        Relationships: [];
       };
       profiles: {
         Row: Profile;
-        Insert: Omit<Profile, "created_at"> &
-          Partial<Pick<Profile, "created_at">>;
-        Update: Partial<Profile>;
+        Insert: ProfileInsert;
+        Update: Partial<ProfileInsert>;
+        Relationships: [];
       };
       discovered_stories: {
         Row: DiscoveredStory;
-        Insert: Omit<DiscoveredStory, "id" | "discovered_at"> &
-          Partial<Pick<DiscoveredStory, "id" | "discovered_at">>;
-        Update: Partial<DiscoveredStory>;
+        Insert: DiscoveredStoryInsert;
+        Update: Partial<DiscoveredStoryInsert>;
+        Relationships: [];
       };
       story_suggestions: {
         Row: StorySuggestion;
-        Insert: Omit<StorySuggestion, "id" | "created_at" | "status" | "xp_bonus_given"> &
-          Partial<Pick<StorySuggestion, "id" | "created_at" | "status" | "xp_bonus_given">>;
-        Update: Partial<StorySuggestion>;
+        Insert: StorySuggestionInsert;
+        Update: Partial<StorySuggestionInsert>;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
-}
+};

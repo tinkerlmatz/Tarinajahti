@@ -1,9 +1,17 @@
 import type { Metadata, Viewport } from "next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Tarinajahti",
-  description: "Löydä piilotettuja tarinoita kaupunginosan kaduilla",
+  description: "Lähiympäristösi on täynnä tarinoita.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -13,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7e22ce",
+  themeColor: "#0D1B2A",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -26,10 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fi" className="h-full">
-      <body className="h-full bg-gray-950 text-white antialiased">
-        {children}
-      </body>
+    <html lang="fi" className={`${poppins.variable} h-full`}>
+      <body className="h-full antialiased">{children}</body>
     </html>
   );
 }

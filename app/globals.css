@@ -2,9 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --night: #0d1b2a;
+  --ocean: #1e3a5f;
+  --gold: #f4b942;
+  --cream: #f8f9fa;
+}
+
 @layer base {
   html,
   body {
     @apply h-full;
+  }
+  body {
+    @apply bg-night text-cream;
+    /* hienovarainen kultainen hehku ylä- ja alareunaan */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(244, 185, 66, 0.12), transparent 60%),
+      radial-gradient(ellipse 70% 40% at 50% 110%, rgba(30, 58, 95, 0.5), transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Kultainen, hehkuva pääpainike */
+  .btn-gold {
+    @apply w-full rounded-xl bg-gold px-6 py-3.5 font-bold text-night
+           shadow-glow transition-all duration-200
+           hover:bg-gold-light hover:shadow-glow-lg
+           active:scale-[0.98] disabled:opacity-50 disabled:shadow-none;
+  }
+
+  /* Tekstilinkki-painike */
+  .btn-ghost {
+    @apply w-full text-sm text-cream/70 transition-colors hover:text-gold;
+  }
+
+  /* Lomakekenttä */
+  .field {
+    @apply w-full rounded-xl border border-white/10 bg-ocean/40 px-4 py-3.5
+           text-cream placeholder:text-cream/40 transition-colors
+           focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40;
+  }
+
+  /* Kortti */
+  .card {
+    @apply rounded-2xl border border-white/10 bg-ocean/50 backdrop-blur-sm;
   }
 }
