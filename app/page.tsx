@@ -9,13 +9,14 @@ export default async function Home() {
 
   if (!user) redirect("/login");
 
-  // Kirjautunut käyttäjä — näkymät tulossa.
-  return (
-    <main className="flex min-h-full flex-col items-center justify-center p-6 text-center">
-      <p className="text-lg text-cream">Olet kirjautunut sisään.</p>
-      <p className="mt-1 text-sm text-cream/60">
-        Pelinäkymät rakennetaan seuraavaksi.
-      </p>
-    </main>
-  );
+  // Tarkista onko tutoriaali jo nähty.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tutorial_seen")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.tutorial_seen) redirect("/tutorial");
+
+  redirect("/game-board");
 }
