@@ -11,11 +11,12 @@ const STORY_THRESHOLD = 25;
 // Alueehdotusten äänikynnys ennen kuin alue perustetaan.
 const AREA_VOTE_THRESHOLD = 25;
 
-function isOpen(board: GameBoard): boolean {
-  const now = Date.now();
-  const startOk = !board.start_date || new Date(board.start_date).getTime() <= now;
-  const endOk = !board.end_date || new Date(board.end_date).getTime() > now;
-  return startOk && endOk;
+function hasStarted(board: GameBoard): boolean {
+  return !board.start_date || new Date(board.start_date).getTime() <= Date.now();
+}
+
+function hasEnded(board: GameBoard): boolean {
+  return !!board.end_date && new Date(board.end_date).getTime() <= Date.now();
 }
 
 export default async function GameBoardPage() {
@@ -26,12 +27,21 @@ export default async function GameBoardPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: boards }, { data: storyRows }, { data: areaRows }] =
-    await Promise.all([
-      supabase.from("game_boards").select("*").order("name"),
-      supabase.from("stories").select("board_id"),
-      supabase.from("area_suggestions").select("*"),
-    ]);
+  const [boardsRes, storiesRes, areasRes] = await Promise.all([
+    supabase.from("game_boards").select("*").order("name"),
+    supabase.from("stories").select("board_id"),
+    supabase.from("area_suggestions").select("*"),
+  ]);
+
+  const boards = boardsRes.data;
+  const storyRows = storiesRes.data;
+  const areaRows = areasRes.data;
+
+  // --- DEBUG: tulosta mitä Supabase palauttaa (näkyy palvelinlokissa) ---
+  console.log("[game-board] boards error:", boardsRes.error);
+  console.log("[game-board] boards data:", JSON.stringify(boards));
+  console.log("[game-board] boards count:", boards?.length ?? 0);
+  console.log("[game-board] stories error:", storiesRes.error);
 
   // Laske tarinoiden määrä per alue.
   const storyCount = new Map<string, number>();
@@ -39,12 +49,23 @@ export default async function GameBoardPage() {
     storyCount.set(row.board_id, (storyCount.get(row.board_id) ?? 0) + 1);
   }
 
-  const open = (boards ?? []).filter(isOpen);
-  const active = open.filter(
-    (b) => (storyCount.get(b.id) ?? 0) >= STORY_THRESHOLD
+  // Luokittele alueet. Päättyneet piilotetaan.
+  // Aktiivinen = alkanut, ei päättynyt, tarinoita >= 25.
+  // Keräävä    = ei päättynyt eikä aktiivinen (myös vielä alkamattomat alueet).
+  const live = (boards ?? []).filter((b) => !hasEnded(b));
+  const active = live.filter(
+    (b) => hasStarted(b) && (storyCount.get(b.id) ?? 0) >= STORY_THRESHOLD
   );
-  const collecting = open.filter(
-    (b) => (storyCount.get(b.id) ?? 0) < STORY_THRESHOLD
+  const collecting = live.filter((b) => !active.includes(b));
+
+  console.log(
+    "[game-board] classified:",
+    live.map((b) => ({
+      name: b.name,
+      started: hasStarted(b),
+      stories: storyCount.get(b.id) ?? 0,
+      bucket: active.includes(b) ? "active" : "collecting",
+    }))
   );
 
   // Ryhmittele alueehdotukset area_name + city mukaan.
