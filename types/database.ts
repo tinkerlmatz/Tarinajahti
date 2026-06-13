@@ -17,6 +17,9 @@ export type GameBoard = {
   boundary: unknown | null;
   start_date: string | null;
   end_date: string | null;
+  loot_title: string | null;
+  loot_description: string | null;
+  loot_image_url: string | null;
   created_at: string;
 };
 
@@ -91,6 +94,9 @@ export type GameBoardInsert = {
   boundary?: unknown | null;
   start_date?: string | null;
   end_date?: string | null;
+  loot_title?: string | null;
+  loot_description?: string | null;
+  loot_image_url?: string | null;
   created_at?: string;
 };
 

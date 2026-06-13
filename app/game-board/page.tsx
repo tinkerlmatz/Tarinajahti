@@ -1,5 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
+import Countdown from "@/components/Countdown";
+import AreaVoteButton from "@/components/gameboard/AreaVoteButton";
+import type { GameBoard, AreaSuggestion } from "@/types/database";
+
+// Tarinoiden vähimmäismäärä ennen kuin alue on pelattavissa.
+const STORY_THRESHOLD = 25;
+// Alueehdotusten äänikynnys ennen kuin alue perustetaan.
+const AREA_VOTE_THRESHOLD = 25;
+
+function isOpen(board: GameBoard): boolean {
+  const now = Date.now();
+  const startOk = !board.start_date || new Date(board.start_date).getTime() <= now;
+  const endOk = !board.end_date || new Date(board.end_date).getTime() > now;
+  return startOk && endOk;
+}
 
 export default async function GameBoardPage() {
   const supabase = await createClient();
@@ -9,11 +26,198 @@ export default async function GameBoardPage() {
 
   if (!user) redirect("/login");
 
-  // Placeholder — pelialueen valinta (näkymä 3) rakennetaan seuraavaksi.
+  const [{ data: boards }, { data: storyRows }, { data: areaRows }] =
+    await Promise.all([
+      supabase.from("game_boards").select("*").order("name"),
+      supabase.from("stories").select("board_id"),
+      supabase.from("area_suggestions").select("*"),
+    ]);
+
+  // Laske tarinoiden määrä per alue.
+  const storyCount = new Map<string, number>();
+  for (const row of storyRows ?? []) {
+    storyCount.set(row.board_id, (storyCount.get(row.board_id) ?? 0) + 1);
+  }
+
+  const open = (boards ?? []).filter(isOpen);
+  const active = open.filter(
+    (b) => (storyCount.get(b.id) ?? 0) >= STORY_THRESHOLD
+  );
+  const collecting = open.filter(
+    (b) => (storyCount.get(b.id) ?? 0) < STORY_THRESHOLD
+  );
+
+  // Ryhmittele alueehdotukset area_name + city mukaan.
+  const groups = new Map<
+    string,
+    { areaName: string; city: string; count: number; userVoted: boolean }
+  >();
+  for (const s of (areaRows ?? []) as AreaSuggestion[]) {
+    const key = `${s.area_name}|||${s.city}`;
+    const g =
+      groups.get(key) ??
+      { areaName: s.area_name, city: s.city, count: 0, userVoted: false };
+    g.count += 1;
+    if (s.suggested_by === user.id) g.userVoted = true;
+    groups.set(key, g);
+  }
+  const areaGroups = [...groups.values()].sort((a, b) => b.count - a.count);
+
+  const nothing =
+    active.length === 0 && collecting.length === 0 && areaGroups.length === 0;
+
   return (
-    <main className="flex min-h-full flex-col items-center justify-center p-6 text-center">
-      <h1 className="text-2xl font-extrabold text-gold">Pelialueen valinta</h1>
-      <p className="mt-2 text-sm text-cream/60">Tämä näkymä rakennetaan seuraavaksi.</p>
-    </main>
+    <div className="flex min-h-full flex-col">
+      <main className="mx-auto w-full max-w-md flex-1 space-y-8 p-5 pb-8">
+        <h1 className="pt-2 text-2xl font-extrabold text-cream">
+          Valitse <span className="text-gold">jahtialue</span>
+        </h1>
+
+        {nothing && (
+          <div className="card mt-8 p-8 text-center">
+            <p className="text-lg font-semibold text-cream">
+              Ei pelialueita vielä.
+            </p>
+            <Link
+              href="/suggest-area"
+              className="btn-gold mt-6 inline-block w-auto px-6"
+            >
+              Ehdota uutta jahtialuetta!
+            </Link>
+          </div>
+        )}
+
+        {/* AKTIIVISET ALUEET */}
+        {active.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gold/80">
+              Aktiiviset alueet
+            </h2>
+            {active.map((board) => (
+              <div
+                key={board.id}
+                className="rounded-2xl border-2 border-gold bg-ocean/60 p-5 shadow-glow"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-lg font-extrabold text-cream">
+                    {board.name}
+                  </h3>
+                  <span className="shrink-0 rounded-full bg-gold/20 px-2.5 py-1 text-xs font-semibold text-gold">
+                    {storyCount.get(board.id) ?? 0} tarinaa
+                  </span>
+                </div>
+                {board.description && (
+                  <p className="mt-1.5 text-sm text-cream/70">
+                    {board.description}
+                  </p>
+                )}
+                <div className="mt-3 space-y-1 text-sm">
+                  {board.end_date && <Countdown endDate={board.end_date} />}
+                  {board.loot_title && (
+                    <p className="text-cream/90">
+                      🏆 Palkinto:{" "}
+                      <span className="font-semibold text-gold">
+                        {board.loot_title}
+                      </span>
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href={`/play/${board.id}`}
+                  className="btn-gold mt-4 block text-center"
+                >
+                  Pelaa
+                </Link>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* TULOSSA — TARINOITA KERÄTÄÄN */}
+        {collecting.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-cream/50">
+              Tulossa — tarinoita kerätään
+            </h2>
+            {collecting.map((board) => {
+              const count = storyCount.get(board.id) ?? 0;
+              return (
+                <div
+                  key={board.id}
+                  className="rounded-2xl border border-ocean bg-ocean/30 p-5 opacity-80"
+                >
+                  <h3 className="text-lg font-bold text-cream/90">
+                    {board.name}
+                  </h3>
+                  {board.description && (
+                    <p className="mt-1 text-sm text-cream/60">
+                      {board.description}
+                    </p>
+                  )}
+                  <p className="mt-3 text-sm font-semibold text-cream/80">
+                    Tarinoita: {count}/{STORY_THRESHOLD} — peli alkaa pian!
+                  </p>
+                  <ProgressBar value={count} max={STORY_THRESHOLD} />
+                  <Link
+                    href={`/suggest-story?board=${board.id}`}
+                    className="mt-4 inline-block rounded-lg border border-gold/60 px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+                  >
+                    Ehdota tarinapistettä
+                  </Link>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {/* TULOSSA — ALUEEHDOTUKSET */}
+        {areaGroups.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-cream/40">
+              Tulossa — alueehdotukset
+            </h2>
+            {areaGroups.map((g) => (
+              <div
+                key={`${g.areaName}|${g.city}`}
+                className="rounded-2xl border border-white/15 bg-ocean/20 p-5 opacity-50"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-cream">
+                      {g.areaName}
+                    </h3>
+                    <p className="text-sm text-cream/60">{g.city}</p>
+                  </div>
+                  <AreaVoteButton
+                    userId={user.id}
+                    areaName={g.areaName}
+                    city={g.city}
+                    alreadyVoted={g.userVoted}
+                  />
+                </div>
+                <p className="mt-3 text-sm font-semibold text-cream/70">
+                  {g.count}/{AREA_VOTE_THRESHOLD} alueehdotusta
+                </p>
+                <ProgressBar value={g.count} max={AREA_VOTE_THRESHOLD} />
+              </div>
+            ))}
+          </section>
+        )}
+      </main>
+
+      <BottomNav />
+    </div>
+  );
+}
+
+function ProgressBar({ value, max }: { value: number; max: number }) {
+  const pct = Math.min(100, Math.round((value / max) * 100));
+  return (
+    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-night/60">
+      <div
+        className="h-full rounded-full bg-gold transition-all"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
   );
 }
