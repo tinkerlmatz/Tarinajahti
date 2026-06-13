@@ -68,6 +68,17 @@ export type StorySuggestion = {
   created_at: string;
 };
 
+export type AreaSuggestion = {
+  id: string;
+  suggested_by: string;
+  area_name: string;
+  city: string;
+  reason: string;
+  status: SuggestionStatus;
+  suggestion_count: number;
+  created_at: string;
+};
+
 // --- Insert-tyypit ---
 
 export type GameBoardInsert = {
@@ -131,6 +142,17 @@ export type StorySuggestionInsert = {
   created_at?: string;
 };
 
+export type AreaSuggestionInsert = {
+  id?: string;
+  suggested_by: string;
+  area_name: string;
+  city: string;
+  reason: string;
+  status?: SuggestionStatus;
+  suggestion_count?: number;
+  created_at?: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -162,6 +184,12 @@ export type Database = {
         Row: StorySuggestion;
         Insert: StorySuggestionInsert;
         Update: Partial<StorySuggestionInsert>;
+        Relationships: [];
+      };
+      area_suggestions: {
+        Row: AreaSuggestion;
+        Insert: AreaSuggestionInsert;
+        Update: Partial<AreaSuggestionInsert>;
         Relationships: [];
       };
     };
