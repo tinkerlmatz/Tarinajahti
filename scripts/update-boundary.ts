@@ -166,6 +166,11 @@ function main() {
     const centerLng = (minLng + maxLng) / 2;
     const centerLat = (minLat + maxLat) / 2;
 
+    // Koko boundary-kenttään menevä JSON-merkkijono (kopioitavaksi).
+    console.log("\n===== BOUNDARY JSON ALKAA =====");
+    console.log(JSON.stringify(multiPolygon));
+    console.log("===== BOUNDARY JSON LOPPUU =====\n");
+
     console.log(`Polygoneja: ${polygons.length}`);
     console.log(`Kärkipisteitä yhteensä: ${polygons.reduce((s, p) => s + p[0].length, 0)}`);
     console.log(`Keskipiste: lat=${centerLat.toFixed(6)}, lng=${centerLng.toFixed(6)}`);
