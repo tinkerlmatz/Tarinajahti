@@ -4,6 +4,7 @@ import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import Countdown from "@/components/Countdown";
 import AreaVoteButton from "@/components/gameboard/AreaVoteButton";
+import ShowAreaButton from "@/components/gameboard/ShowAreaButton";
 import type { GameBoard, AreaSuggestion } from "@/types/database";
 
 // Tarinoiden vähimmäismäärä ennen kuin alue on pelattavissa.
@@ -149,6 +150,11 @@ export default async function GameBoardPage() {
                 >
                   Pelaa
                 </Link>
+                {board.boundary ? (
+                  <div className="mt-2 flex justify-center">
+                    <ShowAreaButton boundary={board.boundary} title={board.name} />
+                  </div>
+                ) : null}
               </div>
             ))}
           </section>
@@ -179,12 +185,17 @@ export default async function GameBoardPage() {
                     Tarinoita: {count}/{STORY_THRESHOLD} — peli alkaa pian!
                   </p>
                   <ProgressBar value={count} max={STORY_THRESHOLD} />
-                  <Link
-                    href={`/suggest-story?board=${board.id}`}
-                    className="mt-4 inline-block rounded-lg border border-gold/60 px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
-                  >
-                    Ehdota tarinapistettä
-                  </Link>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={`/suggest-story?board=${board.id}`}
+                      className="inline-block rounded-lg border border-gold/60 px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+                    >
+                      Ehdota tarinapistettä
+                    </Link>
+                    {board.boundary ? (
+                      <ShowAreaButton boundary={board.boundary} title={board.name} />
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
