@@ -17,11 +17,13 @@ const CATEGORY_ICON: Record<string, string> = {
 export default function StoryModal({
   story,
   xp,
-  onClose,
+  onContinue,
+  onEnd,
 }: {
   story: Story;
   xp: number;
-  onClose: () => void;
+  onContinue: () => void;
+  onEnd: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center">
@@ -41,15 +43,21 @@ export default function StoryModal({
           </h2>
         </div>
 
-        <div className="max-h-[50vh] overflow-y-auto px-5 py-5">
+        <div className="max-h-[45vh] overflow-y-auto px-5 py-5">
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-cream/90">
             {story.content}
           </p>
         </div>
 
-        <div className="px-5 pb-5">
-          <button onClick={onClose} className="btn-gold">
-            Sulje
+        <div className="flex flex-col gap-2 px-5 pb-5">
+          <button onClick={onContinue} className="btn-gold">
+            Jatka jahtia
+          </button>
+          <button
+            onClick={onEnd}
+            className="w-full rounded-xl border border-white/20 py-3 text-sm font-semibold text-cream/80 transition-colors hover:border-white/40 hover:text-cream"
+          >
+            Lopeta jahti
           </button>
         </div>
       </div>
