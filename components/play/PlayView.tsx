@@ -4,12 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import {
-  haversineDistance,
-  bearing,
-  directionLabel,
-  formatDistance,
-} from "@/lib/geo";
+import { haversineDistance, bearing, formatDistance } from "@/lib/geo";
 import type { GameBoard, Story } from "@/types/database";
 import BottomNav from "@/components/BottomNav";
 import StoryModal from "@/components/play/StoryModal";
@@ -355,7 +350,7 @@ export default function PlayView({
 
               <p className="text-center text-lg font-semibold text-cream">
                 {targetDist !== null && formatDistance(targetDist)}{" "}
-                <span className="text-gold">{directionLabel(targetBear)}</span>
+                <span className="text-gold">kohteeseen</span>
               </p>
 
               {!hasRotation && (

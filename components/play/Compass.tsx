@@ -87,18 +87,6 @@ export default function Compass({
         <polygon points="150,150 132,132 30,150" fill="#e0a838" />
         <polygon points="150,150 132,168 30,150" fill="#c8902a" />
         <circle cx="150" cy="150" r="58" fill="none" stroke="#F4B942" strokeWidth="1" opacity=".4" />
-        <g
-          fontFamily="Cinzel, Georgia, serif"
-          fontWeight="700"
-          fill="#F4B942"
-          textAnchor="middle"
-          dominantBaseline="middle"
-        >
-          <text x="150" y="-8" fontSize="22">N</text>
-          <text x="308" y="150" fontSize="20">E</text>
-          <text x="150" y="309" fontSize="20">S</text>
-          <text x="-8" y="150" fontSize="20">W</text>
-        </g>
       </g>
 
       {/* Neula — kääntyy rotation-propilla */}
@@ -111,10 +99,16 @@ export default function Compass({
         }}
       >
         <g filter="url(#kompShadow)">
-          <polygon points="150,150 162,150 150,46" fill="url(#kompNeedleN)" />
-          <polygon points="150,150 138,150 150,46" fill="#c8902a" />
-          <polygon points="150,150 162,150 150,254" fill="#e9eef5" />
-          <polygon points="150,150 138,150 150,254" fill="#aeb9c7" />
+          {/* Valkoinen/hopea pää = vastakkainen suunta (kapeampi, lyhyempi) */}
+          <polygon points="150,150 158,150 150,238" fill="#e9eef5" />
+          <polygon points="150,150 142,150 150,238" fill="#aeb9c7" />
+
+          {/* Kultainen pää = kohteen suunta (leveämpi varsi + iso nuolenpää) */}
+          <polygon points="150,150 162,150 150,70" fill="url(#kompNeedleN)" />
+          <polygon points="150,150 138,150 150,70" fill="#c8902a" />
+          {/* Iso selkeä nuolenpää kärkeen */}
+          <polygon points="150,22 173,78 150,66 127,78" fill="url(#kompNeedleN)" stroke="#7d5618" strokeWidth="1.5" strokeLinejoin="round" />
+          <polygon points="150,22 150,66 127,78" fill="#c8902a" opacity=".55" />
         </g>
         <circle cx="150" cy="150" r="13" fill="url(#kompHub)" stroke="#7d5618" strokeWidth="1.5" />
         <circle cx="150" cy="150" r="4.5" fill="#0a1827" />

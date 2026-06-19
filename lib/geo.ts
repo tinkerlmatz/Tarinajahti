@@ -50,13 +50,13 @@ export function directionLabel(deg: number): string {
   return DIRECTIONS_FI[Math.round(deg / 45) % 8];
 }
 
-/** Muotoile etäisyys luettavaksi: "noin 340 m" / "noin 1,2 km". */
+/** Muotoile etäisyys luettavaksi: "340 m" / "1,2 km". */
 export function formatDistance(meters: number): string {
   if (meters >= 1000) {
-    return `noin ${(meters / 1000).toFixed(1).replace(".", ",")} km`;
+    return `${(meters / 1000).toFixed(1).replace(".", ",")} km`;
   }
   if (meters >= 100) {
-    return `noin ${Math.round(meters / 10) * 10} m`;
+    return `${Math.round(meters / 10) * 10} m`;
   }
-  return `noin ${Math.round(meters)} m`;
+  return `${Math.round(meters)} m`;
 }
