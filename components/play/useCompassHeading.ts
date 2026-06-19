@@ -24,6 +24,7 @@ export type CompassDebug = {
  */
 export function useCompassHeading() {
   const [heading, setHeading] = useState(0);
+  const [hasDeviceHeading, setHasDeviceHeading] = useState(false);
   const [needsPermission, setNeedsPermission] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [debug, setDebug] = useState<CompassDebug>({
@@ -55,11 +56,13 @@ export function useCompassHeading() {
       // iOS: suunta suoraan pohjoisesta myötäpäivään.
       gotData.current = true;
       setUnavailable(false);
+      setHasDeviceHeading(true);
       setHeading(ev.webkitCompassHeading);
     } else if (ev.alpha != null) {
       // Android (absolute): alpha 0° = pohjoinen, vastapäivään → 360 - alpha.
       gotData.current = true;
       setUnavailable(false);
+      setHasDeviceHeading(true);
       setHeading((360 - ev.alpha) % 360);
     }
   }, []);
@@ -118,5 +121,12 @@ export function useCompassHeading() {
     }
   }, [startListening]);
 
-  return { heading, needsPermission, requestPermission, unavailable, debug };
+  return {
+    heading,
+    hasDeviceHeading,
+    needsPermission,
+    requestPermission,
+    unavailable,
+    debug,
+  };
 }

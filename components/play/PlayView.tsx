@@ -62,8 +62,14 @@ export default function PlayView({
 }) {
   const supabase = createClient();
   const router = useRouter();
-  const { heading, needsPermission, requestPermission, unavailable, debug } =
-    useCompassHeading();
+  const {
+    heading,
+    hasDeviceHeading,
+    needsPermission,
+    requestPermission,
+    unavailable,
+    debug,
+  } = useCompassHeading();
 
   const [pos, setPos] = useState<Pos | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +81,9 @@ export default function PlayView({
   const [summary, setSummary] = useState<Summary | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [targetId, setTargetId] = useState<string | null>(null);
+  // GPS-pohjainen kulkusuunta (fallback laiteanturille).
+  const [gpsHeading, setGpsHeading] = useState<number | null>(null);
+  const headingAnchor = useRef<{ lat: number; lng: number } | null>(null);
 
   // Refit (eivät aiheuta uudelleenrenderöintiä).
   const prevPos = useRef<{ lat: number; lng: number; t: number } | null>(null);
@@ -156,6 +165,18 @@ export default function PlayView({
         }
       }
       prevPos.current = { lat: p.lat, lng: p.lng, t: now };
+
+      // GPS-kulkusuunta: päivitä kun on liikuttu väh. 5 m ankkurista.
+      const anchor = headingAnchor.current;
+      if (!anchor) {
+        headingAnchor.current = { lat: p.lat, lng: p.lng };
+      } else {
+        const moved = haversineDistance(anchor.lat, anchor.lng, p.lat, p.lng);
+        if (moved >= 5) {
+          setGpsHeading(bearing(anchor.lat, anchor.lng, p.lat, p.lng));
+          headingAnchor.current = { lat: p.lat, lng: p.lng };
+        }
+      }
 
       void checkDiscovery(p);
 
@@ -269,9 +290,17 @@ export default function PlayView({
   const undiscoveredCount = stories.filter((s) => !discovered.has(s.id)).length;
   const allDiscovered = stories.length > 0 && undiscoveredCount === 0;
   const showHint = targetDist !== null && targetDist <= HINT_RADIUS_M;
-  // Neulan kulma suhteessa laitteen suuntaan: kohde edessä → 0° (ylös),
+
+  // Efektiivinen suunta: laiteanturi jos toimii, muuten GPS-kulkusuunta.
+  const effectiveHeading = hasDeviceHeading
+    ? heading
+    : gpsHeading;
+  const hasRotation = effectiveHeading !== null;
+  // Neulan kulma suhteessa kulkusuuntaan: kohde edessä → 0° (ylös),
   // oikealla → 90°, takana → 180°. Normalisoidaan -180…+180 sujuvuuden vuoksi.
-  const arrowAngle = normalizeAngle(targetBear - heading);
+  const arrowAngle = hasRotation
+    ? normalizeAngle(targetBear - (effectiveHeading as number))
+    : 0;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -279,9 +308,11 @@ export default function PlayView({
       <div className="border-b border-gold/30 bg-black/60 px-3 py-2 font-mono text-[11px] leading-tight text-gold">
         <div>alpha: {fmt(debug.alpha)} | absolute: {String(debug.absolute)} | evt: {debug.eventType ?? "—"} (#{debug.eventCount})</div>
         <div>webkitCompassHeading: {fmt(debug.webkitCompassHeading)}</div>
-        <div>deviceHeading: {fmt(heading)}</div>
+        <div>deviceHeading: {fmt(heading)} (device: {String(hasDeviceHeading)})</div>
+        <div>gpsHeading: {fmt(gpsHeading)}</div>
+        <div>source: {hasDeviceHeading ? "device" : gpsHeading !== null ? "gps" : "none"}</div>
         <div>bearingToTarget: {fmt(targetBear)}</div>
-        <div>needleRotation: {fmt(arrowAngle)}</div>
+        <div>needleRotation: {hasRotation ? fmt(arrowAngle) : "—"}</div>
       </div>
 
       {/* Yläpalkki */}
@@ -340,7 +371,9 @@ export default function PlayView({
                 <span className="absolute right-2 text-xs text-cream/40">I</span>
 
                 <div
-                  className="transition-transform duration-300 ease-out"
+                  className={`transition-transform duration-300 ease-out ${
+                    hasRotation ? "" : "opacity-30"
+                  }`}
                   style={{ transform: `rotate(${arrowAngle}deg)` }}
                 >
                   <svg width="120" height="120" viewBox="0 0 120 120">
@@ -359,6 +392,12 @@ export default function PlayView({
                 {targetDist !== null && formatDistance(targetDist)}{" "}
                 <span className="text-gold">{directionLabel(targetBear)}</span>
               </p>
+
+              {!hasRotation && (
+                <p className="max-w-xs text-center text-xs text-cream/50">
+                  Liiku muutama metri, niin neula osoittaa kohti tarinaa.
+                </p>
+              )}
 
               {needsPermission && (
                 <button
