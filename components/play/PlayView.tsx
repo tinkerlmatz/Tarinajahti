@@ -33,6 +33,11 @@ function cycleXpFrom(meters: number) {
 
 type Pos = { lat: number; lng: number };
 
+// Normalisoi kulma välille (-180, 180].
+function normalizeAngle(deg: number): number {
+  return ((((deg + 180) % 360) + 360) % 360) - 180;
+}
+
 export default function PlayView({
   board,
   stories,
@@ -258,7 +263,9 @@ export default function PlayView({
   const undiscoveredCount = stories.filter((s) => !discovered.has(s.id)).length;
   const allDiscovered = stories.length > 0 && undiscoveredCount === 0;
   const showHint = targetDist !== null && targetDist <= HINT_RADIUS_M;
-  const arrowAngle = targetBear - heading;
+  // Neulan kulma suhteessa laitteen suuntaan: kohde edessä → 0° (ylös),
+  // oikealla → 90°, takana → 180°. Normalisoidaan -180…+180 sujuvuuden vuoksi.
+  const arrowAngle = normalizeAngle(targetBear - heading);
 
   return (
     <div className="flex min-h-full flex-col">

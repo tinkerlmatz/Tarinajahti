@@ -18,11 +18,11 @@ export function useCompassHeading() {
   const handle = useCallback((e: Event) => {
     const ev = e as OrientationEvent;
     if (typeof ev.webkitCompassHeading === "number") {
-      // iOS: heading suoraan pohjoisesta.
+      // iOS: webkitCompassHeading on jo suunta pohjoisesta myötäpäivään.
       setHeading(ev.webkitCompassHeading);
     } else if (ev.alpha != null) {
-      // Android: absoluuttinen alpha → heading = 360 - alpha.
-      setHeading(ev.absolute ? (360 - ev.alpha) % 360 : ev.alpha);
+      // Android: alpha on suunta VASTApäivään pohjoisesta → heading = 360 - alpha.
+      setHeading((360 - ev.alpha) % 360);
     }
   }, []);
 
