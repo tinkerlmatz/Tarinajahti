@@ -38,10 +38,6 @@ function normalizeAngle(deg: number): number {
   return ((((deg + 180) % 360) + 360) % 360) - 180;
 }
 
-// Debug-näytön muotoilu.
-function fmt(v: number | null): string {
-  return v == null ? "null" : v.toFixed(1) + "°";
-}
 
 export default function PlayView({
   board,
@@ -68,7 +64,6 @@ export default function PlayView({
     needsPermission,
     requestPermission,
     unavailable,
-    debug,
   } = useCompassHeading();
 
   const [pos, setPos] = useState<Pos | null>(null);
@@ -304,17 +299,6 @@ export default function PlayView({
 
   return (
     <div className="flex min-h-full flex-col">
-      {/* DEBUG: kompassin raaka-arvot (poistetaan kun korjattu) */}
-      <div className="border-b border-gold/30 bg-black/60 px-3 py-2 font-mono text-[11px] leading-tight text-gold">
-        <div>alpha: {fmt(debug.alpha)} | absolute: {String(debug.absolute)} | evt: {debug.eventType ?? "—"} (#{debug.eventCount})</div>
-        <div>webkitCompassHeading: {fmt(debug.webkitCompassHeading)}</div>
-        <div>deviceHeading: {fmt(heading)} (device: {String(hasDeviceHeading)})</div>
-        <div>gpsHeading: {fmt(gpsHeading)}</div>
-        <div>source: {hasDeviceHeading ? "device" : gpsHeading !== null ? "gps" : "none"}</div>
-        <div>bearingToTarget: {fmt(targetBear)}</div>
-        <div>needleRotation: {hasRotation ? fmt(arrowAngle) : "—"}</div>
-      </div>
-
       {/* Yläpalkki */}
       <header className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
         <Link
@@ -365,10 +349,10 @@ export default function PlayView({
                   showHint ? "shadow-glow-lg animate-pulse" : "shadow-glow"
                 }`}
               >
-                <span className="absolute top-2 text-xs text-cream/40">P</span>
-                <span className="absolute bottom-2 text-xs text-cream/40">E</span>
-                <span className="absolute left-2 text-xs text-cream/40">L</span>
-                <span className="absolute right-2 text-xs text-cream/40">I</span>
+                <span className="absolute top-2 text-xs text-cream/40">N</span>
+                <span className="absolute bottom-2 text-xs text-cream/40">S</span>
+                <span className="absolute left-2 text-xs text-cream/40">W</span>
+                <span className="absolute right-2 text-xs text-cream/40">E</span>
 
                 <div
                   className={`transition-transform duration-300 ease-out ${
