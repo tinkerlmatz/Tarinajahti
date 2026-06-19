@@ -62,7 +62,7 @@ export default function PlayView({
 }) {
   const supabase = createClient();
   const router = useRouter();
-  const { heading, needsPermission, requestPermission, debug } =
+  const { heading, needsPermission, requestPermission, unavailable, debug } =
     useCompassHeading();
 
   const [pos, setPos] = useState<Pos | null>(null);
@@ -367,6 +367,12 @@ export default function PlayView({
                 >
                   Ota kompassi käyttöön
                 </button>
+              )}
+
+              {unavailable && (
+                <p className="max-w-xs text-center text-xs text-red-400">
+                  Kompassi ei saatavilla — tarkista selaimen asetukset.
+                </p>
               )}
 
               <button
