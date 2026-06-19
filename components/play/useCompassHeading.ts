@@ -11,12 +11,39 @@ type OrientationEvent = DeviceOrientationEvent & {
  * iOS vaatii DeviceOrientationEvent.requestPermission()-kutsun käyttäjäeleestä;
  * Android toimii suoraan.
  */
+export type CompassDebug = {
+  alpha: number | null;
+  webkitCompassHeading: number | null;
+  absolute: boolean | null;
+  eventType: string | null;
+  eventCount: number;
+};
+
 export function useCompassHeading() {
   const [heading, setHeading] = useState(0);
   const [needsPermission, setNeedsPermission] = useState(false);
+  const [debug, setDebug] = useState<CompassDebug>({
+    alpha: null,
+    webkitCompassHeading: null,
+    absolute: null,
+    eventType: null,
+    eventCount: 0,
+  });
 
   const handle = useCallback((e: Event) => {
     const ev = e as OrientationEvent;
+
+    setDebug((d) => ({
+      alpha: ev.alpha ?? null,
+      webkitCompassHeading:
+        typeof ev.webkitCompassHeading === "number"
+          ? ev.webkitCompassHeading
+          : null,
+      absolute: ev.absolute ?? null,
+      eventType: ev.type,
+      eventCount: d.eventCount + 1,
+    }));
+
     if (typeof ev.webkitCompassHeading === "number") {
       // iOS: webkitCompassHeading on jo suunta pohjoisesta myötäpäivään.
       setHeading(ev.webkitCompassHeading);
@@ -62,5 +89,5 @@ export function useCompassHeading() {
     }
   }, [startListening]);
 
-  return { heading, needsPermission, requestPermission };
+  return { heading, needsPermission, requestPermission, debug };
 }

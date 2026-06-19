@@ -38,6 +38,11 @@ function normalizeAngle(deg: number): number {
   return ((((deg + 180) % 360) + 360) % 360) - 180;
 }
 
+// Debug-näytön muotoilu.
+function fmt(v: number | null): string {
+  return v == null ? "null" : v.toFixed(1) + "°";
+}
+
 export default function PlayView({
   board,
   stories,
@@ -57,7 +62,8 @@ export default function PlayView({
 }) {
   const supabase = createClient();
   const router = useRouter();
-  const { heading, needsPermission, requestPermission } = useCompassHeading();
+  const { heading, needsPermission, requestPermission, debug } =
+    useCompassHeading();
 
   const [pos, setPos] = useState<Pos | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -269,6 +275,15 @@ export default function PlayView({
 
   return (
     <div className="flex min-h-full flex-col">
+      {/* DEBUG: kompassin raaka-arvot (poistetaan kun korjattu) */}
+      <div className="border-b border-gold/30 bg-black/60 px-3 py-2 font-mono text-[11px] leading-tight text-gold">
+        <div>alpha: {fmt(debug.alpha)} | absolute: {String(debug.absolute)} | evt: {debug.eventType ?? "—"} (#{debug.eventCount})</div>
+        <div>webkitCompassHeading: {fmt(debug.webkitCompassHeading)}</div>
+        <div>deviceHeading: {fmt(heading)}</div>
+        <div>bearingToTarget: {fmt(targetBear)}</div>
+        <div>needleRotation: {fmt(arrowAngle)}</div>
+      </div>
+
       {/* Yläpalkki */}
       <header className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
         <Link
