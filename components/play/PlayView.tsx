@@ -15,6 +15,7 @@ import BottomNav from "@/components/BottomNav";
 import StoryModal from "@/components/play/StoryModal";
 import MapModal from "@/components/MapModal";
 import DiscoveryAnimation from "@/components/play/DiscoveryAnimation";
+import Compass from "@/components/play/Compass";
 import SessionSummary, { type Summary } from "@/components/play/SessionSummary";
 import { useCompassHeading } from "@/components/play/useCompassHeading";
 
@@ -345,31 +346,11 @@ export default function PlayView({
               )}
 
               <div
-                className={`relative flex h-64 w-64 items-center justify-center rounded-full border-4 border-ocean bg-night/60 ${
-                  showHint ? "shadow-glow-lg animate-pulse" : "shadow-glow"
+                className={`w-full max-w-[280px] rounded-full transition-shadow ${
+                  showHint ? "shadow-glow-lg animate-pulse" : ""
                 }`}
               >
-                <span className="absolute top-2 text-xs text-cream/40">N</span>
-                <span className="absolute bottom-2 text-xs text-cream/40">S</span>
-                <span className="absolute left-2 text-xs text-cream/40">W</span>
-                <span className="absolute right-2 text-xs text-cream/40">E</span>
-
-                <div
-                  className={`transition-transform duration-300 ease-out ${
-                    hasRotation ? "" : "opacity-30"
-                  }`}
-                  style={{ transform: `rotate(${arrowAngle}deg)` }}
-                >
-                  <svg width="120" height="120" viewBox="0 0 120 120">
-                    <path
-                      d="M60 12 L78 78 L60 64 L42 78 Z"
-                      fill="#F4B942"
-                      stroke="#0D1B2A"
-                      strokeWidth="2"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
+                <Compass rotation={arrowAngle} dim={!hasRotation} />
               </div>
 
               <p className="text-center text-lg font-semibold text-cream">
