@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -12 124 124" width="160" height="160">
+  <style>
+    .ring{transform-box:fill-box;transform-origin:center;animation:hRing 2s ease-out infinite}
+    @keyframes hRing{0%{transform:scale(.6);opacity:0}40%{opacity:.9}100%{transform:scale(1.18);opacity:0}}
+    .spk{transform-box:fill-box;transform-origin:center;animation:hSpk 1.4s ease-in-out infinite}
+    @keyframes hSpk{0%,100%{opacity:.2;transform:scale(.5)}50%{opacity:1;transform:scale(1)}}
+    .icon{transform-box:fill-box;transform-origin:center;animation:hIcon .8s cubic-bezier(.2,.8,.2,1) both}
+    @keyframes hIcon{0%{transform:scale(.3) rotate(-8deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+    .ln{transform-box:fill-box;transform-origin:left center;animation:hLn .5s ease-out both}
+    @keyframes hLn{0%{transform:scaleX(0);opacity:0}100%{transform:scaleX(1);opacity:1}}
+  </style>
+  <circle class="ring" cx="50" cy="50" r="36" fill="none" stroke="#F4B942" stroke-width="2"></circle>
+  <rect class="spk" x="20" y="4" width="9" height="9" fill="#F4B942" style="animation-delay:0s"></rect>
+  <rect class="spk" x="74" y="14" width="7" height="7" fill="#ffd479" style="animation-delay:.14s"></rect>
+  <rect class="spk" x="10" y="78" width="8" height="8" fill="#F4B942" style="animation-delay:.28s"></rect>
+  <rect class="spk" x="80" y="80" width="6" height="6" fill="#ffd479" style="animation-delay:.4s"></rect>
+  <g class="icon">
+    <rect x="29" y="27" width="42" height="46" rx="2" fill="#f3e4c4"></rect>
+    <rect x="29" y="27" width="42" height="46" rx="2" fill="none" stroke="#d99a2b" stroke-width="1" opacity=".5"></rect>
+    <rect class="ln" x="36" y="35" width="28" height="3" rx="1.5" fill="#1E3A5F" style="animation-delay:0s"></rect>
+    <rect class="ln" x="36" y="43" width="24" height="3" rx="1.5" fill="#1E3A5F" style="animation-delay:.1s"></rect>
+    <rect class="ln" x="36" y="51" width="28" height="3" rx="1.5" fill="#1E3A5F" style="animation-delay:.2s"></rect>
+    <rect class="ln" x="36" y="59" width="17" height="3" rx="1.5" fill="#1E3A5F" style="animation-delay:.3s"></rect>
+    <g>
+      <rect x="24" y="70" width="52" height="12" rx="6" fill="#F4B942"></rect>
+      <ellipse cx="24" cy="76" rx="5" ry="6" fill="#d99a2b"></ellipse>
+      <ellipse cx="76" cy="76" rx="5" ry="6" fill="#d99a2b"></ellipse>
+      <rect x="30" y="74" width="40" height="2" rx="1" fill="#fff" opacity=".35"></rect>
+    </g>
+    <g>
+      <rect x="24" y="18" width="52" height="12" rx="6" fill="#F4B942"></rect>
+      <ellipse cx="24" cy="24" rx="5" ry="6" fill="#d99a2b"></ellipse>
+      <ellipse cx="76" cy="24" rx="5" ry="6" fill="#d99a2b"></ellipse>
+      <rect x="30" y="22" width="40" height="2" rx="1" fill="#fff" opacity=".35"></rect>
+    </g>
+  </g>
+</svg>

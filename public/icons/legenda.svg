@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -12 124 124" width="160" height="160">
+  <style>
+    .ring{transform-box:fill-box;transform-origin:center;animation:lRing 2s ease-out infinite}
+    @keyframes lRing{0%{transform:scale(.6);opacity:0}40%{opacity:.9}100%{transform:scale(1.18);opacity:0}}
+    .spk{transform-box:fill-box;transform-origin:center;animation:lSpk 1.4s ease-in-out infinite}
+    @keyframes lSpk{0%,100%{opacity:.2;transform:scale(.5)}50%{opacity:1;transform:scale(1)}}
+    .icon{transform-box:fill-box;transform-origin:center;animation:lIcon .6s ease-out both}
+    @keyframes lIcon{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+    .flash{transform-box:fill-box;transform-origin:center;animation:lFlash 1.3s ease-out infinite}
+    @keyframes lFlash{0%{opacity:.85;transform:scale(.4)}40%{opacity:.4}70%{opacity:0;transform:scale(1.7)}100%{opacity:0}}
+    .bolt{animation:lBolt 1.3s steps(1) infinite}
+    @keyframes lBolt{0%,50%{opacity:1}55%{opacity:.15}60%{opacity:1}66%{opacity:.3}72%{opacity:1}100%{opacity:1}}
+  </style>
+  <circle class="ring" cx="50" cy="48" r="36" fill="none" stroke="#F4B942" stroke-width="2"></circle>
+  <rect class="spk" x="26" y="6" width="9" height="9" fill="#F4B942" style="animation-delay:0s"></rect>
+  <rect class="spk" x="76" y="18" width="7" height="7" fill="#ffd479" style="animation-delay:.13s"></rect>
+  <rect class="spk" x="16" y="76" width="8" height="8" fill="#F4B942" style="animation-delay:.26s"></rect>
+  <rect class="spk" x="78" y="80" width="6" height="6" fill="#ffd479" style="animation-delay:.38s"></rect>
+  <g class="icon">
+    <circle class="flash" cx="50" cy="48" r="20" fill="#fff"></circle>
+    <path class="bolt" d="M58 14 L32 53 L47 53 L40 88 L70 43 L53 43 Z" fill="#F4B942"></path>
+    <path d="M58 14 L32 53 L47 53 L40 88 L70 43 L53 43 Z" fill="none" stroke="#fff" stroke-width="1" opacity=".4"></path>
+  </g>
+</svg>

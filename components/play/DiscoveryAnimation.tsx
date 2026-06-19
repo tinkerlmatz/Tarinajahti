@@ -4,16 +4,10 @@ import { useEffect } from "react";
 import { playFanfare } from "@/lib/sound";
 import type { StoryCategory } from "@/types/database";
 
-const ICON: Record<StoryCategory, string> = {
-  historia: "📜",
-  legenda: "⚡",
-  muisto: "⏳",
-};
-
-const ANIM: Record<StoryCategory, string> = {
-  historia: "animate-unfurl",
-  legenda: "animate-flash",
-  muisto: "animate-flip",
+const ICON_SRC: Record<StoryCategory, string> = {
+  historia: "/icons/historia.svg",
+  legenda: "/icons/legenda.svg",
+  muisto: "/icons/muisto.svg",
 };
 
 export default function DiscoveryAnimation({
@@ -32,9 +26,13 @@ export default function DiscoveryAnimation({
       {category === "legenda" && (
         <div className="pointer-events-none absolute inset-0 animate-flash bg-gold/20" />
       )}
-      <div className={`text-8xl ${ANIM[category] ?? ""}`} aria-hidden>
-        {ICON[category] ?? "✨"}
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={ICON_SRC[category] ?? "/icons/historia.svg"}
+        alt=""
+        aria-hidden
+        className="h-40 w-40 drop-shadow-[0_0_16px_rgba(244,185,66,0.4)]"
+      />
       <p className="text-2xl font-extrabold tracking-wide text-gold drop-shadow-[0_0_12px_rgba(244,185,66,0.6)]">
         Löysit tarinan!
       </p>

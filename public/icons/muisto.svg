@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -12 124 124" width="160" height="160">
+  <style>
+    .ring{transform-box:fill-box;transform-origin:center;animation:mRing 2s ease-out infinite}
+    @keyframes mRing{0%{transform:scale(.6);opacity:0}40%{opacity:.9}100%{transform:scale(1.18);opacity:0}}
+    .spk{transform-box:fill-box;transform-origin:center;animation:mSpk 1.4s ease-in-out infinite}
+    @keyframes mSpk{0%,100%{opacity:.2;transform:scale(.5)}50%{opacity:1;transform:scale(1)}}
+    .icon{transform-box:fill-box;transform-origin:center;animation:mFlip 3s ease-in-out infinite}
+    @keyframes mFlip{0%,68%{transform:rotate(0)}84%,100%{transform:rotate(180deg)}}
+    .sandTop{transform-box:fill-box;transform-origin:top center;animation:mTop 3s ease-in-out infinite}
+    @keyframes mTop{0%{transform:scaleY(1)}68%{transform:scaleY(0)}68.01%,100%{transform:scaleY(1)}}
+    .sandBot{transform-box:fill-box;transform-origin:bottom center;animation:mBot 3s ease-in-out infinite}
+    @keyframes mBot{0%{transform:scaleY(0)}68%{transform:scaleY(1)}68.01%,100%{transform:scaleY(0)}}
+    .stream{transform-box:fill-box;transform-origin:center;animation:mStream 3s ease-in-out infinite}
+    @keyframes mStream{0%,68%{opacity:1}74%,100%{opacity:0}}
+  </style>
+  <defs>
+    <clipPath id="muTop"><polygon points="31,23 69,23 50,49"></polygon></clipPath>
+    <clipPath id="muBot"><polygon points="50,51 31,77 69,77"></polygon></clipPath>
+  </defs>
+  <circle class="ring" cx="50" cy="50" r="36" fill="none" stroke="#F4B942" stroke-width="2"></circle>
+  <rect class="spk" x="22" y="8" width="9" height="9" fill="#F4B942" style="animation-delay:0s"></rect>
+  <rect class="spk" x="74" y="16" width="7" height="7" fill="#ffd479" style="animation-delay:.14s"></rect>
+  <rect class="spk" x="14" y="78" width="8" height="8" fill="#F4B942" style="animation-delay:.28s"></rect>
+  <rect class="spk" x="78" y="76" width="6" height="6" fill="#ffd479" style="animation-delay:.4s"></rect>
+  <g class="icon">
+    <rect x="26" y="15" width="48" height="6" rx="3" fill="#F4B942"></rect>
+    <rect x="26" y="79" width="48" height="6" rx="3" fill="#F4B942"></rect>
+    <path d="M30 22 L70 22 L50 50 Z" fill="#F4B942" fill-opacity=".08" stroke="#F4B942" stroke-width="3" stroke-linejoin="round"></path>
+    <path d="M50 50 L30 78 L70 78 Z" fill="#F4B942" fill-opacity=".08" stroke="#F4B942" stroke-width="3" stroke-linejoin="round"></path>
+    <g clip-path="url(#muTop)"><polygon class="sandTop" points="31,23 69,23 50,49" fill="#f3e4c4"></polygon></g>
+    <g clip-path="url(#muBot)"><polygon class="sandBot" points="50,51 31,77 69,77" fill="#f3e4c4"></polygon></g>
+    <rect class="stream" x="49" y="49" width="2" height="28" fill="#f3e4c4"></rect>
+  </g>
+</svg>
