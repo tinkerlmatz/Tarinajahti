@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import AdminPanel from "@/components/admin/AdminPanel";
 import type { GameBoard, Story, StorySuggestion } from "@/types/database";
 
@@ -54,7 +55,16 @@ export default async function AdminPage() {
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 space-y-5 p-5 pb-10">
-      <h1 className="pt-2 text-2xl font-extrabold text-cream">Admin-paneeli</h1>
+      <div className="flex items-center gap-3 pt-2">
+        <Link
+          href="/profile"
+          aria-label="Takaisin"
+          className="text-lg text-cream/70 transition-colors hover:text-gold"
+        >
+          ←
+        </Link>
+        <h1 className="text-2xl font-extrabold text-cream">Admin-paneeli</h1>
+      </div>
       <AdminPanel
         userId={user.id}
         boards={boards}
