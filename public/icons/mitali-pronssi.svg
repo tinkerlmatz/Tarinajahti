@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 150" width="128" height="150">
+  <defs>
+    <linearGradient id="rib" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3f7a4d"></stop><stop offset="100%" stop-color="#21452b"></stop></linearGradient>
+    <radialGradient id="disc" cx="38%" cy="32%" r="72%"><stop offset="0%" stop-color="#f0b483"></stop><stop offset="55%" stop-color="#cd7f4a"></stop><stop offset="100%" stop-color="#8a4e26"></stop></radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0b483"></stop><stop offset="100%" stop-color="#8a4e26"></stop></linearGradient>
+    <filter id="ds" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5"></feDropShadow></filter>
+    <clipPath id="clip"><circle cx="64" cy="98" r="40"></circle></clipPath>
+  </defs>
+  
+  <path d="M44 20 L30 92 L52 80 L60 58 Z" fill="url(#rib)"></path>
+  <path d="M84 20 L98 92 L76 80 L68 58 Z" fill="url(#rib)" opacity=".82"></path>
+  <g filter="url(#ds)">
+    <circle cx="64" cy="98" r="40" fill="url(#rim)"></circle>
+    <circle cx="64" cy="98" r="40" fill="none" stroke="#8a4e26" stroke-width="1.5"></circle>
+    <circle cx="64" cy="98" r="33" fill="url(#disc)"></circle>
+    <circle cx="64" cy="98" r="33" fill="none" stroke="#f0b483" stroke-width="1" opacity=".6"></circle>
+    <circle cx="64" cy="98" r="27" fill="none" stroke="#8a4e26" stroke-width="1" stroke-dasharray="2 4" opacity=".55"></circle>
+  </g>
+  <text x="64" y="98" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="34" fill="#4d2a12" text-anchor="middle" dominant-baseline="central">3</text>
+  <g clip-path="url(#clip)"><rect class="shine" x="0" y="58" width="26" height="80" fill="#ffffff" opacity=".28"></rect></g>
+</svg>

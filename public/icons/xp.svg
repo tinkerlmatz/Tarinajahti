@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="xpStar" cx="38%" cy="32%" r="72%"><stop offset="0%" stop-color="#ffe49c"></stop><stop offset="55%" stop-color="#F4B942"></stop><stop offset="100%" stop-color="#c8902a"></stop></radialGradient>
+    <filter id="xpds" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.45"></feDropShadow></filter>
+  </defs>
+  
+  <g class="xp">
+    <g filter="url(#xpds)"><path d="M50 6 L60 38 L94 38 L66 58 L77 92 L50 71 L23 92 L34 58 L6 38 L40 38 Z" fill="url(#xpStar)" stroke="#7d5618" stroke-width="1.5" stroke-linejoin="round"></path></g>
+    <text x="50" y="56" font-family="Cinzel, Georgia, serif" font-weight="700" font-size="22" fill="#0a1827" text-anchor="middle" dominant-baseline="central">XP</text>
+  </g>
+</svg>
