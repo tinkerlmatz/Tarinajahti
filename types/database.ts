@@ -72,6 +72,8 @@ export type StorySuggestion = {
   video_url: string | null;
   image_urls: string[] | null;
   video_urls: string[] | null;
+  xp_reward: number | null;
+  discovery_radius_meters: number | null;
   status: SuggestionStatus;
   xp_bonus_given: boolean;
   created_at: string;
@@ -155,6 +157,8 @@ export type StorySuggestionInsert = {
   video_url?: string | null;
   image_urls?: string[] | null;
   video_urls?: string[] | null;
+  xp_reward?: number | null;
+  discovery_radius_meters?: number | null;
   status?: SuggestionStatus;
   xp_bonus_given?: boolean;
   created_at?: string;

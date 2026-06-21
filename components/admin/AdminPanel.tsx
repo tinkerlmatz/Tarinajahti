@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import StoryForm from "@/components/admin/StoryForm";
+import SuggestionEditForm from "@/components/admin/SuggestionEditForm";
 import type { GameBoard, Story, StorySuggestion } from "@/types/database";
 
 type SuggestionWithName = StorySuggestion & { suggester_name: string };
@@ -29,11 +30,14 @@ export default function AdminPanel({
   const [tab, setTab] = useState<Tab>("Tarinat");
   const [editing, setEditing] = useState<Story | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editingSuggestion, setEditingSuggestion] =
+    useState<SuggestionWithName | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   function refresh() {
     setEditing(null);
     setAdding(false);
+    setEditingSuggestion(null);
     router.refresh();
   }
 
@@ -55,8 +59,8 @@ export default function AdminPanel({
       content: s.description,
       lat: s.lat,
       lng: s.lng,
-      xp_reward: XP_BONUS,
-      discovery_radius_meters: 15,
+      xp_reward: s.xp_reward ?? XP_BONUS,
+      discovery_radius_meters: s.discovery_radius_meters ?? 15,
       image_url: s.image_urls?.[0] ?? s.image_url ?? null,
       video_url: s.video_urls?.[0] ?? s.video_url ?? null,
       created_by: s.suggested_by,
@@ -103,6 +107,17 @@ export default function AdminPanel({
           setEditing(null);
           setAdding(false);
         }}
+      />
+    );
+  }
+
+  if (editingSuggestion) {
+    return (
+      <SuggestionEditForm
+        suggestion={editingSuggestion}
+        boards={boards}
+        onDone={refresh}
+        onCancel={() => setEditingSuggestion(null)}
       />
     );
   }
@@ -222,6 +237,13 @@ export default function AdminPanel({
                       className="flex-1 rounded-lg bg-gold py-2 text-sm font-bold text-night hover:bg-gold-light disabled:opacity-50"
                     >
                       Hyväksy
+                    </button>
+                    <button
+                      onClick={() => setEditingSuggestion(s)}
+                      disabled={busy === s.id}
+                      className="flex-1 rounded-lg border border-gold/60 py-2 text-sm font-semibold text-gold hover:bg-gold/10 disabled:opacity-50"
+                    >
+                      Muokkaa
                     </button>
                     <button
                       onClick={() => reject(s.id)}
