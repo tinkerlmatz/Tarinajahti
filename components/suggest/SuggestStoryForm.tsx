@@ -58,7 +58,6 @@ export default function SuggestStoryForm({
 
   const MAX_MEDIA = 3;
   const [category, setCategory] = useState<StoryCategory | null>(null);
-  const [xp, setXp] = useState(10);
   const [openInfo, setOpenInfo] = useState<StoryCategory | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -137,7 +136,6 @@ export default function SuggestStoryForm({
         lat: pos.lat,
         lng: pos.lng,
         category,
-        xp_reward: xp,
         image_urls: imageUrls.length > 0 ? imageUrls : null,
         video_urls: videos.length > 0 ? videos : null,
       });
@@ -185,10 +183,7 @@ export default function SuggestStoryForm({
             <button
               type="button"
               key={c.value}
-              onClick={() => {
-                setCategory(c.value);
-                setXp(c.defaultXp);
-              }}
+              onClick={() => setCategory(c.value)}
               className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 transition-colors ${
                 category === c.value
                   ? "border-gold bg-gold/15 text-gold"
@@ -221,23 +216,6 @@ export default function SuggestStoryForm({
             {CATEGORIES.find((c) => c.value === openInfo)?.info}
           </div>
         )}
-      </div>
-
-      {/* XP-pisteet (oletus kategorian mukaan) */}
-      <div>
-        <label className="mb-1 block text-sm font-semibold text-cream">
-          XP-pisteet{" "}
-          <span className="font-normal text-cream/50">
-            (oletus luokan mukaan, admin voi muuttaa)
-          </span>
-        </label>
-        <input
-          type="number"
-          min={0}
-          value={xp}
-          onChange={(e) => setXp(Number(e.target.value))}
-          className="field"
-        />
       </div>
 
       {/* Otsikko */}

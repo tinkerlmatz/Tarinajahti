@@ -10,7 +10,12 @@ import type { GameBoard, Story, StorySuggestion } from "@/types/database";
 type SuggestionWithName = StorySuggestion & { suggester_name: string };
 type BoardWithCount = GameBoard & { story_count: number };
 
-const XP_BONUS = 25;
+// Ehdottajan XP-bonus kategorian mukaan, kun ehdotus hyväksytään.
+const BONUS_BY_CATEGORY: Record<string, number> = {
+  muisto: 5,
+  legenda: 10,
+  historia: 15,
+};
 const TABS = ["Tarinat", "Ehdotukset", "Alueet"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -51,7 +56,9 @@ export default function AdminPanel({
 
   async function approve(s: SuggestionWithName) {
     setBusy(s.id);
-    // 1) Luo tarina ehdotuksesta.
+    const bonus = BONUS_BY_CATEGORY[s.category] ?? 5;
+    // 1) Luo tarina ehdotuksesta. Tarinan oma xp_reward = kategorian oletus
+    //    (admin voi muokata sitä jälkikäteen tarinan muokkauslomakkeesta).
     await supabase.from("stories").insert({
       board_id: s.board_id,
       category: s.category,
@@ -59,7 +66,7 @@ export default function AdminPanel({
       content: s.description,
       lat: s.lat,
       lng: s.lng,
-      xp_reward: s.xp_reward ?? XP_BONUS,
+      xp_reward: bonus,
       discovery_radius_meters: s.discovery_radius_meters ?? 15,
       image_url: s.image_urls?.[0] ?? s.image_url ?? null,
       video_url: s.video_urls?.[0] ?? s.video_url ?? null,
@@ -79,7 +86,7 @@ export default function AdminPanel({
     if (prof) {
       await supabase
         .from("profiles")
-        .update({ total_xp: (prof.total_xp ?? 0) + XP_BONUS })
+        .update({ total_xp: (prof.total_xp ?? 0) + bonus })
         .eq("id", s.suggested_by);
     }
     setBusy(null);

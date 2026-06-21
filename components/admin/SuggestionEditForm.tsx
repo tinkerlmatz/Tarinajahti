@@ -33,7 +33,6 @@ export default function SuggestionEditForm({
   const [title, setTitle] = useState(suggestion.title);
   const [description, setDescription] = useState(suggestion.description);
   const [category, setCategory] = useState<StoryCategory>(suggestion.category);
-  const [xp, setXp] = useState(suggestion.xp_reward ?? 25);
   const [radius, setRadius] = useState(
     suggestion.discovery_radius_meters ?? 15
   );
@@ -61,7 +60,6 @@ export default function SuggestionEditForm({
         title: title.trim(),
         description: description.trim(),
         category,
-        xp_reward: xp,
         discovery_radius_meters: radius,
         lat: pos.lat,
         lng: pos.lng,
@@ -125,31 +123,17 @@ export default function SuggestionEditForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1 block text-sm font-semibold text-cream">
-            XP
-          </label>
-          <input
-            type="number"
-            value={xp}
-            onChange={(e) => setXp(Number(e.target.value))}
-            className="field"
-            min={0}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-semibold text-cream">
-            Löytösäde (m)
-          </label>
-          <input
-            type="number"
-            value={radius}
-            onChange={(e) => setRadius(Number(e.target.value))}
-            className="field"
-            min={1}
-          />
-        </div>
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-cream">
+          Löytösäde (m)
+        </label>
+        <input
+          type="number"
+          value={radius}
+          onChange={(e) => setRadius(Number(e.target.value))}
+          className="field"
+          min={1}
+        />
       </div>
 
       <div>
