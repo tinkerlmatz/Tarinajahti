@@ -13,6 +13,7 @@ export default function LoginForm() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,12 +23,11 @@ export default function LoginForm() {
     setInfo(null);
   }
 
-  async function ensureProfile(userId: string) {
-    // Luo profiili jos sitä ei vielä ole. username = sähköpostin alkuosa.
+  async function ensureProfile(userId: string, name: string) {
     await supabase.from("profiles").upsert(
       {
         id: userId,
-        username: email.split("@")[0],
+        username: name,
         total_xp: 0,
         distance_walked_meters: 0,
         distance_cycled_meters: 0,
@@ -52,10 +52,35 @@ export default function LoginForm() {
         setLoading(false);
         return;
       }
-      if (data.user) await ensureProfile(data.user.id);
       router.push("/");
       router.refresh();
     } else {
+      const name = username.trim();
+
+      // Nimimerkin validointi.
+      if (name.length < 3 || name.length > 20) {
+        setError("Nimimerkin tulee olla 3–20 merkkiä.");
+        setLoading(false);
+        return;
+      }
+      if (!/^[A-Za-z0-9ÄÖÅäöå _-]+$/.test(name)) {
+        setError("Nimimerkissä ei saa olla erikoismerkkejä.");
+        setLoading(false);
+        return;
+      }
+
+      // Onko nimimerkki jo käytössä?
+      const { data: taken } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", name)
+        .maybeSingle();
+      if (taken) {
+        setError("Nimimerkki on jo käytössä");
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(suomeksi(error.message));
@@ -64,7 +89,7 @@ export default function LoginForm() {
       }
       if (data.session && data.user) {
         // Sähköpostivahvistus pois päältä → suora kirjautuminen
-        await ensureProfile(data.user.id);
+        await ensureProfile(data.user.id, name);
         router.push("/");
         router.refresh();
       } else {
@@ -97,6 +122,18 @@ export default function LoginForm() {
           minLength={6}
           className="field"
         />
+        {mode === "signup" && (
+          <input
+            type="text"
+            placeholder="Nimimerkki"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            minLength={3}
+            maxLength={20}
+            className="field"
+          />
+        )}
       </div>
 
       {error && (
