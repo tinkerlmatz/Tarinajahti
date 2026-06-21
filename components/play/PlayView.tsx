@@ -363,12 +363,20 @@ export default function PlayView({
                 </button>
               )}
 
-              <button
-                onClick={endSession}
-                className="text-xs font-semibold text-cream/50 underline-offset-2 transition-colors hover:text-cream/80 hover:underline"
-              >
-                Lopeta jahti
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                <Link
+                  href={`/suggest-story?board=${board.id}`}
+                  className="text-xs font-semibold text-gold/80 underline-offset-2 transition-colors hover:text-gold hover:underline"
+                >
+                  Ehdota tarinapistettä
+                </Link>
+                <button
+                  onClick={endSession}
+                  className="text-xs font-semibold text-cream/50 underline-offset-2 transition-colors hover:text-cream/80 hover:underline"
+                >
+                  Lopeta jahti
+                </button>
+              </div>
             </>
           )
         )}

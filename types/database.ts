@@ -35,6 +35,7 @@ export type Story = {
   discovery_radius_meters: number;
   image_url: string | null;
   external_link: string | null;
+  video_url: string | null;
   created_by: string | null;
   created_at: string;
 };
@@ -66,6 +67,8 @@ export type StorySuggestion = {
   lat: number;
   lng: number;
   category: StoryCategory;
+  image_url: string | null;
+  video_url: string | null;
   status: SuggestionStatus;
   xp_bonus_given: boolean;
   created_at: string;
@@ -112,6 +115,7 @@ export type StoryInsert = {
   discovery_radius_meters: number;
   image_url?: string | null;
   external_link?: string | null;
+  video_url?: string | null;
   created_by?: string | null;
   created_at?: string;
 };
@@ -143,6 +147,8 @@ export type StorySuggestionInsert = {
   lat: number;
   lng: number;
   category: StoryCategory;
+  image_url?: string | null;
+  video_url?: string | null;
   status?: SuggestionStatus;
   xp_bonus_given?: boolean;
   created_at?: string;

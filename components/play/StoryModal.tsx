@@ -43,10 +43,43 @@ export default function StoryModal({
           </h2>
         </div>
 
-        <div className="max-h-[45vh] overflow-y-auto px-5 py-5">
+        <div className="max-h-[50vh] overflow-y-auto px-5 py-5">
+          {story.image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={story.image_url}
+              alt=""
+              className="mb-4 w-full rounded-xl object-cover"
+            />
+          )}
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-cream/90">
             {story.content}
           </p>
+
+          {(story.external_link || story.video_url) && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {story.external_link && (
+                <a
+                  href={story.external_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-gold/60 px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+                >
+                  Lue lisää
+                </a>
+              )}
+              {story.video_url && (
+                <a
+                  href={story.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-gold/60 px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+                >
+                  Katso video
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2 px-5 pb-5">

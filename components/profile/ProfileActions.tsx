@@ -40,6 +40,12 @@ export default function ProfileActions() {
         Lähetä pelin linkki
       </button>
       <Link
+        href="/suggest-story"
+        className="block w-full rounded-xl border border-gold/50 py-3 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+      >
+        Ehdota tarinapistettä
+      </Link>
+      <Link
         href="/tutorial"
         className="block w-full rounded-xl border border-gold/50 py-3 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
       >
