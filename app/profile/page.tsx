@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import ProfileActions from "@/components/profile/ProfileActions";
+import UsernameEditor from "@/components/profile/UsernameEditor";
 import type { Profile } from "@/types/database";
 
 function rankingTitle(xp: number): string {
@@ -59,14 +60,15 @@ export default async function ProfilePage() {
               <span className="text-4xl">🧭</span>
             )}
           </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl font-extrabold text-cream">
-              {profile?.username ?? "Jahtaaja"}
-            </h1>
+          <div className="flex flex-col items-center gap-1">
+            <UsernameEditor
+              initialUsername={profile?.username ?? "Jahtaaja"}
+              userId={user.id}
+            />
             <p className="text-lg font-bold text-gold">{rankingTitle(xp)}</p>
             {profile?.created_at && (
               <p className="text-xs text-cream/50">
-                Jahtaaja seit {formatDate(profile.created_at)}
+                Tarinan jahtaaja {formatDate(profile.created_at)} lähtien
               </p>
             )}
           </div>
