@@ -48,6 +48,7 @@ export type Profile = {
   distance_walked_meters: number;
   distance_cycled_meters: number;
   tutorial_seen: boolean;
+  is_admin: boolean;
   created_at: string;
 };
 
@@ -130,6 +131,7 @@ export type ProfileInsert = {
   distance_walked_meters?: number;
   distance_cycled_meters?: number;
   tutorial_seen?: boolean;
+  is_admin?: boolean;
   created_at?: string;
 };
 

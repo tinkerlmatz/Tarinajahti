@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import ProfileActions from "@/components/profile/ProfileActions";
 import UsernameEditor from "@/components/profile/UsernameEditor";
@@ -93,6 +94,16 @@ export default async function ProfilePage() {
             label="Pyöräily"
           />
         </section>
+
+        {/* Admin-linkki */}
+        {profile?.is_admin && (
+          <Link
+            href="/admin"
+            className="block w-full rounded-xl border border-gold bg-gold/10 py-3 text-center text-sm font-bold text-gold transition-colors hover:bg-gold/20"
+          >
+            Admin-paneeli
+          </Link>
+        )}
 
         {/* Toiminnot */}
         <ProfileActions />
