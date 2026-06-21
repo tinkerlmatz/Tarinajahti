@@ -260,6 +260,31 @@ export default function PlayView({
     setTargetId(null); // pakota uuden (kaukaisen) kohteen valinta
   }
 
+  // Vaihda kohdetta: uusi lähin löytämätön väh. 200m nykyisestä kohteesta.
+  function skipTarget() {
+    if (!pos || !target) return;
+    const others = stories.filter(
+      (s) => !discovered.has(s.id) && s.id !== target.id
+    );
+    if (others.length === 0) return;
+
+    const far = others.filter(
+      (s) => haversineDistance(target.lat, target.lng, s.lat, s.lng) >= 200
+    );
+    const pool = far.length > 0 ? far : others; // muuten toiseksi lähin
+
+    let best = pool[0];
+    let bestDist = haversineDistance(pos.lat, pos.lng, best.lat, best.lng);
+    for (const s of pool) {
+      const d = haversineDistance(pos.lat, pos.lng, s.lat, s.lng);
+      if (d < bestDist) {
+        best = s;
+        bestDist = d;
+      }
+    }
+    setTargetId(best.id);
+  }
+
   // --- Lasketut arvot ---
   const target = targetId
     ? stories.find((s) => s.id === targetId && !discovered.has(s.id))
@@ -347,6 +372,15 @@ export default function PlayView({
                 {targetDist !== null && formatDistance(targetDist)}{" "}
                 <span className="text-gold">kohteeseen</span>
               </p>
+
+              {undiscoveredCount > 1 && (
+                <button
+                  onClick={skipTarget}
+                  className="rounded-full border border-gold/40 px-4 py-1.5 text-xs font-semibold text-gold/90 transition-colors hover:border-gold/70 hover:bg-gold/10"
+                >
+                  Vaihda kohdetta
+                </button>
+              )}
 
               {!hasRotation && (
                 <p className="max-w-xs text-center text-xs text-cream/50">
