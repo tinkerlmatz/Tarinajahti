@@ -4,7 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { haversineDistance, bearing, formatDistance } from "@/lib/geo";
+import {
+  haversineDistance,
+  bearing,
+  formatDistance,
+  pointInBoundary,
+} from "@/lib/geo";
 import type { GameBoard, Story } from "@/types/database";
 import BottomNav from "@/components/BottomNav";
 import StoryModal from "@/components/play/StoryModal";
@@ -140,7 +145,10 @@ export default function PlayView({
 
       const now = Date.now();
       const prev = prevPos.current;
-      if (prev) {
+      // Matka kirjataan vain pelialueen rajojen sisällä (jos rajat määritelty).
+      const inside =
+        !board.boundary || pointInBoundary(p.lat, p.lng, board.boundary);
+      if (prev && inside) {
         const d = haversineDistance(prev.lat, prev.lng, p.lat, p.lng);
         const dtSec = (now - prev.t) / 1000;
         if (dtSec > 0 && d >= 1) {
@@ -170,7 +178,7 @@ export default function PlayView({
         void flushDistance();
       }
     },
-    [checkDiscovery, flushDistance]
+    [checkDiscovery, flushDistance, board.boundary]
   );
 
   // --- Geolocation watch ---
