@@ -4,15 +4,8 @@ import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import ProfileActions from "@/components/profile/ProfileActions";
 import UsernameEditor from "@/components/profile/UsernameEditor";
+import { getLevel } from "@/lib/levels";
 import type { Profile } from "@/types/database";
-
-function rankingTitle(xp: number): string {
-  if (xp >= 500) return "Mestarijahtaaja";
-  if (xp >= 300) return "Kaupungin Tuntija";
-  if (xp >= 150) return "Lähilegenda";
-  if (xp >= 50) return "Tarinan Etsijä";
-  return "Utelias Kulkija";
-}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -44,6 +37,12 @@ export default async function ProfilePage() {
   const found = discoveredRes.count ?? 0;
   const totalStories = storiesRes.count ?? 0;
 
+  const lvl = getLevel(xp);
+  // Edistyminen nykyisen tason sisällä seuraavaan tasoon.
+  const progressPct = lvl.next
+    ? Math.round(((xp - lvl.min) / (lvl.next.min - lvl.min)) * 100)
+    : 100;
+
   return (
     <div className="flex min-h-full flex-col">
       <main className="mx-auto w-full max-w-md flex-1 space-y-6 p-5 pb-8">
@@ -66,12 +65,29 @@ export default async function ProfilePage() {
               initialUsername={profile?.username ?? "Jahtaaja"}
               userId={user.id}
             />
-            <p className="text-lg font-bold text-gold">{rankingTitle(xp)}</p>
+            <p className="text-lg font-bold text-gold">
+              Olet tasolla {lvl.level}: {lvl.title}
+            </p>
             {profile?.created_at && (
               <p className="text-xs text-cream/50">
                 Tarinan jahtaaja {formatDate(profile.created_at)} lähtien
               </p>
             )}
+          </div>
+
+          {/* XP-edistymispalkki seuraavaan tasoon */}
+          <div className="w-full max-w-xs">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-night/60">
+              <div
+                className="h-full rounded-full bg-gold transition-all"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <p className="mt-1.5 text-center text-xs text-cream/60">
+              {lvl.next
+                ? `${lvl.xpToNext} XP seuraavaan tasoon (${lvl.next.title})`
+                : "Olet saavuttanut korkeimman tason!"}
+            </p>
           </div>
         </section>
 

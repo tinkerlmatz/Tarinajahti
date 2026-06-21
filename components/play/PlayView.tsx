@@ -16,6 +16,8 @@ import StoryModal from "@/components/play/StoryModal";
 import MapModal from "@/components/MapModal";
 import DiscoveryAnimation from "@/components/play/DiscoveryAnimation";
 import Compass from "@/components/play/Compass";
+import LevelUpModal from "@/components/play/LevelUpModal";
+import { getLevel } from "@/lib/levels";
 import SessionSummary, { type Summary } from "@/components/play/SessionSummary";
 import { useCompassHeading } from "@/components/play/useCompassHeading";
 
@@ -76,6 +78,28 @@ export default function PlayView({
   const [gpsHeading, setGpsHeading] = useState<number | null>(null);
   const headingAnchor = useRef<{ lat: number; lng: number } | null>(null);
 
+  // Level up -tila.
+  const [levelUp, setLevelUp] = useState<{ level: number; title: string } | null>(
+    null
+  );
+  const pendingStoryLevelUp = useRef<{ level: number; title: string } | null>(
+    null
+  );
+  const pendingSessionLevelUp = useRef<{ level: number; title: string } | null>(
+    null
+  );
+  const navigateAfterLevelUp = useRef(false);
+
+  function maybeLevelUp(before: number, after: number) {
+    const b = getLevel(before).level;
+    const a = getLevel(after).level;
+    if (a > b) {
+      const info = getLevel(after);
+      return { level: info.level, title: info.title };
+    }
+    return null;
+  }
+
   // Refit (eivät aiheuta uudelleenrenderöintiä).
   const prevPos = useRef<{ lat: number; lng: number; t: number } | null>(null);
   const accWalk = useRef(0);
@@ -117,7 +141,11 @@ export default function PlayView({
         if (dist <= radius) {
           discoveredRef.current.add(story.id);
           setDiscovered(new Set(discoveredRef.current));
+          const before = baseXp + accXp.current;
           accXp.current += story.xp_reward;
+          const after = baseXp + accXp.current;
+          const lu = maybeLevelUp(before, after);
+          if (lu) pendingStoryLevelUp.current = lu;
           sessionFound.current += 1;
           setPendingStory(story); // käynnistä löytöanimaatio
 
@@ -241,6 +269,13 @@ export default function PlayView({
     const cycleXp = cycleXpFrom(accCycle.current);
     const distXp = walkXp + cycleXp;
 
+    // Level up km-pisteiden lisäyksestä.
+    const before = baseXp + accXp.current;
+    const after = before + distXp;
+    pendingSessionLevelUp.current =
+      maybeLevelUp(before, after) ?? pendingStoryLevelUp.current;
+    pendingStoryLevelUp.current = null;
+
     await supabase
       .from("profiles")
       .update({
@@ -266,6 +301,21 @@ export default function PlayView({
     setActiveStory(null);
     requireFar.current = true;
     setTargetId(null); // pakota uuden (kaukaisen) kohteen valinta
+    if (pendingStoryLevelUp.current) {
+      navigateAfterLevelUp.current = false;
+      setLevelUp(pendingStoryLevelUp.current);
+      pendingStoryLevelUp.current = null;
+    }
+  }
+
+  function closeLevelUp() {
+    const nav = navigateAfterLevelUp.current;
+    setLevelUp(null);
+    navigateAfterLevelUp.current = false;
+    if (nav) {
+      router.push("/game-board");
+      router.refresh();
+    }
   }
 
   // Vaihda kohdetta: uusi lähin löytämätön väh. 200m nykyisestä kohteesta.
@@ -450,9 +500,24 @@ export default function PlayView({
         <SessionSummary
           summary={summary}
           onClose={() => {
-            router.push("/game-board");
-            router.refresh();
+            if (pendingSessionLevelUp.current) {
+              navigateAfterLevelUp.current = true;
+              setLevelUp(pendingSessionLevelUp.current);
+              pendingSessionLevelUp.current = null;
+              setSummary(null);
+            } else {
+              router.push("/game-board");
+              router.refresh();
+            }
           }}
+        />
+      )}
+
+      {levelUp && (
+        <LevelUpModal
+          level={levelUp.level}
+          title={levelUp.title}
+          onClose={closeLevelUp}
         />
       )}
 
