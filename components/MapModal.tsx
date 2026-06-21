@@ -38,9 +38,9 @@ export default function MapModal({
       if (boundary) {
         const layer = L.geoJSON(boundary as GeoJSON.GeoJsonObject, {
           style: {
-            color: "#F4B942",
+            color: "#1E3A5F",
             weight: 3,
-            fillColor: "#F4B942",
+            fillColor: "#1E3A5F",
             fillOpacity: 0.12,
           },
         }).addTo(map);
