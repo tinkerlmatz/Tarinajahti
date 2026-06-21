@@ -69,6 +69,8 @@ export type StorySuggestion = {
   category: StoryCategory;
   image_url: string | null;
   video_url: string | null;
+  image_urls: string[] | null;
+  video_urls: string[] | null;
   status: SuggestionStatus;
   xp_bonus_given: boolean;
   created_at: string;
@@ -149,6 +151,8 @@ export type StorySuggestionInsert = {
   category: StoryCategory;
   image_url?: string | null;
   video_url?: string | null;
+  image_urls?: string[] | null;
+  video_urls?: string[] | null;
   status?: SuggestionStatus;
   xp_bonus_given?: boolean;
   created_at?: string;

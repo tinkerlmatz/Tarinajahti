@@ -32,11 +32,12 @@ export default function SuggestStoryForm({
 }) {
   const supabase = createClient();
 
+  const MAX_MEDIA = 3;
   const [category, setCategory] = useState<StoryCategory | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [videoUrls, setVideoUrls] = useState<string[]>([""]);
+  const [files, setFiles] = useState<File[]>([]);
   const [pos, setPos] = useState<LatLng | null>(null);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,11 +77,11 @@ export default function SuggestStoryForm({
 
     setSaving(true);
 
-    // Kuvan lataus Storageen (valinnainen).
-    let imageUrl: string | null = null;
-    if (file) {
+    // Kuvien lataus Storageen (valinnainen, max 3).
+    const imageUrls: string[] = [];
+    for (const file of files.slice(0, MAX_MEDIA)) {
       const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${userId}/${Date.now()}.${ext}`;
+      const path = `${userId}/${Date.now()}-${imageUrls.length}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("story-suggestions")
         .upload(path, file, { upsert: false });
@@ -92,8 +93,13 @@ export default function SuggestStoryForm({
       const { data } = supabase.storage
         .from("story-suggestions")
         .getPublicUrl(path);
-      imageUrl = data.publicUrl;
+      imageUrls.push(data.publicUrl);
     }
+
+    const videos = videoUrls
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0)
+      .slice(0, MAX_MEDIA);
 
     const { error: insErr } = await supabase
       .from("story_suggestions")
@@ -105,8 +111,8 @@ export default function SuggestStoryForm({
         lat: pos.lat,
         lng: pos.lng,
         category,
-        image_url: imageUrl,
-        video_url: videoUrl.trim() || null,
+        image_urls: imageUrls.length > 0 ? imageUrls : null,
+        video_urls: videos.length > 0 ? videos : null,
       });
 
     setSaving(false);
@@ -200,32 +206,78 @@ export default function SuggestStoryForm({
         </p>
       </div>
 
-      {/* Kuva */}
+      {/* Kuvat (max 3) */}
       <div>
         <label className="mb-1 block text-sm font-semibold text-cream">
-          Kuva <span className="font-normal text-cream/50">(valinnainen)</span>
+          Kuvat{" "}
+          <span className="font-normal text-cream/50">
+            (valinnainen, enintään {MAX_MEDIA})
+          </span>
         </label>
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          multiple
+          onChange={(e) => {
+            const picked = Array.from(e.target.files ?? []).slice(0, MAX_MEDIA);
+            setFiles(picked);
+          }}
           className="block w-full text-sm text-cream/70 file:mr-3 file:rounded-lg file:border-0 file:bg-gold file:px-4 file:py-2 file:font-semibold file:text-night"
         />
+        {files.length > 0 && (
+          <p className="mt-1 text-xs text-cream/50">
+            {files.length} kuva{files.length === 1 ? "" : "a"} valittu
+            {files.length >= MAX_MEDIA ? " (maksimi)" : ""}
+          </p>
+        )}
       </div>
 
-      {/* Videolinkki */}
+      {/* Videolinkit (max 3) */}
       <div>
         <label className="mb-1 block text-sm font-semibold text-cream">
-          Videolinkki{" "}
-          <span className="font-normal text-cream/50">(valinnainen)</span>
+          Videolinkit{" "}
+          <span className="font-normal text-cream/50">
+            (valinnainen, enintään {MAX_MEDIA})
+          </span>
         </label>
-        <input
-          type="url"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          className="field"
-          placeholder="https://youtube.com/…"
-        />
+        <div className="space-y-2">
+          {videoUrls.map((url, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => {
+                  const next = [...videoUrls];
+                  next[i] = e.target.value;
+                  setVideoUrls(next);
+                }}
+                className="field flex-1"
+                placeholder="https://youtube.com/…"
+              />
+              {videoUrls.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVideoUrls(videoUrls.filter((_, j) => j !== i))
+                  }
+                  aria-label="Poista"
+                  className="shrink-0 rounded-lg border border-white/15 px-3 text-cream/60 hover:text-cream"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {videoUrls.length < MAX_MEDIA && (
+          <button
+            type="button"
+            onClick={() => setVideoUrls([...videoUrls, ""])}
+            className="mt-2 text-xs font-semibold text-gold hover:underline"
+          >
+            + Lisää videolinkki
+          </button>
+        )}
       </div>
 
       {/* Sijainti */}
