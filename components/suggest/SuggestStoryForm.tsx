@@ -9,10 +9,34 @@ import type { StoryCategory } from "@/types/database";
 
 type LatLng = { lat: number; lng: number };
 
-const CATEGORIES: { value: StoryCategory; label: string; icon: string }[] = [
-  { value: "historia", label: "Historia", icon: "📜" },
-  { value: "legenda", label: "Legenda", icon: "⚡" },
-  { value: "muisto", label: "Muisto", icon: "⏳" },
+const CATEGORIES: {
+  value: StoryCategory;
+  label: string;
+  icon: string;
+  defaultXp: number;
+  info: string;
+}[] = [
+  {
+    value: "historia",
+    label: "Historia",
+    icon: "📜",
+    defaultXp: 15,
+    info: "Todellinen tapahtuma tai historiallinen fakta joka liittyy tähän paikkaan. Esim. rakennuksen historia, merkittävä henkilö tai tapahtuma paikalla.",
+  },
+  {
+    value: "legenda",
+    label: "Legenda",
+    icon: "⚡",
+    defaultXp: 10,
+    info: "Paikallinen tarina jonka todenperäisyys on epäselvä. Kaupunkihuhu, myyttinen tarina tai epävirallinen perimätieto.",
+  },
+  {
+    value: "muisto",
+    label: "Muisto",
+    icon: "⏳",
+    defaultXp: 5,
+    info: "Merkittävä henkilökohtainen muisto joka liittyy juuri tähän paikkaan. Muiston tulee olla erityinen — ei arkipäiväinen kokemus vaan jotain ainutlaatuista: kosinta, lapsuuden tärkeä hetki, perheen perinne tms. Tavalliset arjen hetket eivät sovi tähän kategoriaan.",
+  },
 ];
 
 const MapPicker = dynamic(() => import("@/components/suggest/MapPicker"), {
@@ -34,6 +58,8 @@ export default function SuggestStoryForm({
 
   const MAX_MEDIA = 3;
   const [category, setCategory] = useState<StoryCategory | null>(null);
+  const [xp, setXp] = useState(10);
+  const [openInfo, setOpenInfo] = useState<StoryCategory | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoUrls, setVideoUrls] = useState<string[]>([""]);
@@ -111,6 +137,7 @@ export default function SuggestStoryForm({
         lat: pos.lat,
         lng: pos.lng,
         category,
+        xp_reward: xp,
         image_urls: imageUrls.length > 0 ? imageUrls : null,
         video_urls: videos.length > 0 ? videos : null,
       });
@@ -158,18 +185,59 @@ export default function SuggestStoryForm({
             <button
               type="button"
               key={c.value}
-              onClick={() => setCategory(c.value)}
-              className={`flex flex-col items-center gap-1 rounded-xl border p-3 transition-colors ${
+              onClick={() => {
+                setCategory(c.value);
+                setXp(c.defaultXp);
+              }}
+              className={`relative flex flex-col items-center gap-1 rounded-xl border p-3 transition-colors ${
                 category === c.value
                   ? "border-gold bg-gold/15 text-gold"
                   : "border-white/10 bg-ocean/40 text-cream/70 hover:border-gold/40"
               }`}
             >
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={`${c.label} – lisätietoa`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenInfo(openInfo === c.value ? null : c.value);
+                }}
+                className="absolute right-1.5 top-1.5 text-xs text-cream/40 hover:text-gold"
+              >
+                ⓘ
+              </span>
               <span className="text-2xl">{c.icon}</span>
               <span className="text-xs font-semibold">{c.label}</span>
             </button>
           ))}
         </div>
+
+        {openInfo && (
+          <div className="mt-2 rounded-xl border border-gold/40 bg-ocean/60 p-3 text-xs leading-relaxed text-cream/80">
+            <span className="font-semibold text-gold">
+              {CATEGORIES.find((c) => c.value === openInfo)?.label}:{" "}
+            </span>
+            {CATEGORIES.find((c) => c.value === openInfo)?.info}
+          </div>
+        )}
+      </div>
+
+      {/* XP-pisteet (oletus kategorian mukaan) */}
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-cream">
+          XP-pisteet{" "}
+          <span className="font-normal text-cream/50">
+            (oletus luokan mukaan, admin voi muuttaa)
+          </span>
+        </label>
+        <input
+          type="number"
+          min={0}
+          value={xp}
+          onChange={(e) => setXp(Number(e.target.value))}
+          className="field"
+        />
       </div>
 
       {/* Otsikko */}
