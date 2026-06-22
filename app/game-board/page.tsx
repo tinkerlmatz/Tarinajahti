@@ -10,7 +10,7 @@ import type { GameBoard, AreaSuggestion } from "@/types/database";
 // Tarinoiden vähimmäismäärä ennen kuin alue on pelattavissa.
 const STORY_THRESHOLD = 25;
 // Alueehdotusten äänikynnys ennen kuin alue perustetaan.
-const AREA_VOTE_THRESHOLD = 25;
+const AREA_VOTE_THRESHOLD = 10;
 
 function hasStarted(board: GameBoard): boolean {
   return !board.start_date || new Date(board.start_date).getTime() <= Date.now();
@@ -224,15 +224,31 @@ export default async function GameBoardPage() {
                     userId={user.id}
                     areaName={g.areaName}
                     city={g.city}
+                    count={g.count}
                     alreadyVoted={g.userVoted}
                   />
                 </div>
                 <p className="mt-3 text-sm font-semibold text-cream/70">
-                  {g.count}/{AREA_VOTE_THRESHOLD} alueehdotusta
+                  {g.count}/{AREA_VOTE_THRESHOLD} ehdotusta
                 </p>
                 <ProgressBar value={g.count} max={AREA_VOTE_THRESHOLD} />
               </div>
             ))}
+          </section>
+        )}
+
+        {/* Ehdota uutta aluetta */}
+        {!nothing && (
+          <section className="rounded-2xl border border-white/10 bg-ocean/30 p-5 text-center">
+            <p className="text-sm text-cream/80">
+              Ei näy omaa aluettasi listalla?
+            </p>
+            <Link
+              href="/suggest-area"
+              className="btn-gold mt-4 inline-block w-auto px-6"
+            >
+              Ehdota uutta aluetta
+            </Link>
           </section>
         )}
       </main>
