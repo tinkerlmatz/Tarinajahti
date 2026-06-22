@@ -26,6 +26,16 @@ export default function MapModal({
       const L = (await import("leaflet")).default;
       if (cancelled || !containerRef.current) return;
 
+      // Korjaa Leafletin oletusmarkkeri-ikonit (bundler ei löydä niitä muuten).
+      delete (
+        L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown }
+      )._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+        iconUrl: "/leaflet/marker-icon.png",
+        shadowUrl: "/leaflet/marker-shadow.png",
+      });
+
       map = L.map(containerRef.current, { attributionControl: true });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

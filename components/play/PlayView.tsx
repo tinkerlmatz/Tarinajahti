@@ -13,7 +13,8 @@ import {
 import type { GameBoard, Story } from "@/types/database";
 import BottomNav from "@/components/BottomNav";
 import StoryModal from "@/components/play/StoryModal";
-import MapModal from "@/components/MapModal";
+import dynamic from "next/dynamic";
+const MapModal = dynamic(() => import("@/components/MapModal"), { ssr: false });
 import DiscoveryAnimation from "@/components/play/DiscoveryAnimation";
 import Compass from "@/components/play/Compass";
 import LevelUpModal from "@/components/play/LevelUpModal";

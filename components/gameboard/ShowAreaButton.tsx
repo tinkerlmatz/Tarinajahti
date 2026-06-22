@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import MapModal from "@/components/MapModal";
+import dynamic from "next/dynamic";
+
+const MapModal = dynamic(() => import("@/components/MapModal"), { ssr: false });
 
 export default function ShowAreaButton({
   boundary,
