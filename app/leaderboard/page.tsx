@@ -2,20 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import PlayTimeLeft from "@/components/leaderboard/PlayTimeLeft";
-import type { GameBoard, Profile } from "@/types/database";
-
-const MEDALS = [
-  "/icons/mitali-kulta.svg",
-  "/icons/mitali-hopea.svg",
-  "/icons/mitali-pronssi.svg",
-];
-
-// Hehkutyyli top 3 -riveille.
-const GLOW = [
-  "border-gold/70 shadow-[0_0_20px_rgba(244,185,66,0.35)] bg-gold/10",
-  "border-slate-300/60 shadow-[0_0_18px_rgba(203,213,225,0.3)] bg-slate-300/5",
-  "border-amber-700/60 shadow-[0_0_18px_rgba(180,120,60,0.3)] bg-amber-800/10",
-];
+import LeaderboardTabs, {
+  type Tab,
+  type Entry,
+} from "@/components/leaderboard/LeaderboardTabs";
+import type { GameBoard } from "@/types/database";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -24,57 +15,117 @@ export default async function LeaderboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [boardsRes, topRes, discoveredRes, meRes] = await Promise.all([
-    supabase.from("game_boards").select("*"),
-    supabase
-      .from("profiles")
-      .select("id, username, total_xp")
-      .order("total_xp", { ascending: false })
-      .limit(10),
-    supabase.from("discovered_stories").select("user_id"),
-    supabase
-      .from("profiles")
-      .select("id, username, total_xp")
-      .eq("id", user.id)
-      .single(),
-  ]);
+  const [boardsRes, topRes, discoveredRes, storiesRes, profilesRes] =
+    await Promise.all([
+      supabase.from("game_boards").select("*"),
+      supabase
+        .from("profiles")
+        .select("id, username, total_xp")
+        .order("total_xp", { ascending: false })
+        .limit(10),
+      supabase.from("discovered_stories").select("user_id, story_id"),
+      supabase.from("stories").select("id, board_id, xp_reward"),
+      supabase.from("profiles").select("id, username"),
+    ]);
 
-  // Aktiivinen alue countdownia varten: alkanut, ei päättynyt, end_date asetettu.
   const now = Date.now();
-  const activeBoard = (boardsRes.data ?? [])
-    .filter(
-      (b: GameBoard) =>
-        b.end_date &&
-        new Date(b.end_date).getTime() > now &&
-        (!b.start_date || new Date(b.start_date).getTime() <= now)
-    )
+  const boards = ((boardsRes.data ?? []) as GameBoard[]).filter(
+    (b) => !b.end_date || new Date(b.end_date).getTime() > now
+  );
+
+  const nameById = new Map<string, string>();
+  for (const p of profilesRes.data ?? []) nameById.set(p.id, p.username);
+
+  // Globaali: tarinamäärät per käyttäjä (kaikki löydöt).
+  const globalStoryCount = new Map<string, number>();
+  for (const d of discoveredRes.data ?? []) {
+    globalStoryCount.set(
+      d.user_id,
+      (globalStoryCount.get(d.user_id) ?? 0) + 1
+    );
+  }
+
+  const top = (topRes.data ?? []) as {
+    id: string;
+    username: string;
+    total_xp: number;
+  }[];
+  const globalEntries: Entry[] = top.map((p) => ({
+    id: p.id,
+    username: p.username,
+    xp: p.total_xp,
+    stories: globalStoryCount.get(p.id) ?? 0,
+  }));
+
+  // Oma globaali sijoitus jos ei top 10:ssä.
+  const inTop = top.some((p) => p.id === user.id);
+  let myRank: number | null = null;
+  if (!inTop) {
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("total_xp")
+      .eq("id", user.id)
+      .single();
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .gt("total_xp", me?.total_xp ?? 0);
+    myRank = (count ?? 0) + 1;
+  }
+
+  // Tarinametatieto: id → {board_id, xp}.
+  const storyMeta = new Map<string, { board_id: string; xp: number }>();
+  for (const s of storiesRes.data ?? []) {
+    storyMeta.set(s.id, { board_id: s.board_id, xp: s.xp_reward });
+  }
+
+  // Aluekohtaiset listat.
+  const perBoard = new Map<
+    string,
+    Map<string, { xp: number; stories: number }>
+  >();
+  for (const d of discoveredRes.data ?? []) {
+    const meta = storyMeta.get(d.story_id);
+    if (!meta) continue;
+    let users = perBoard.get(meta.board_id);
+    if (!users) {
+      users = new Map();
+      perBoard.set(meta.board_id, users);
+    }
+    const u = users.get(d.user_id) ?? { xp: 0, stories: 0 };
+    u.xp += meta.xp;
+    u.stories += 1;
+    users.set(d.user_id, u);
+  }
+
+  const tabs: Tab[] = [
+    {
+      id: "all",
+      label: "Kaikki alueet",
+      entries: globalEntries,
+      myRank,
+    },
+    ...boards.map((b) => {
+      const users = perBoard.get(b.id) ?? new Map();
+      const entries: Entry[] = [...users.entries()]
+        .map(([uid, v]) => ({
+          id: uid,
+          username: nameById.get(uid) ?? "Tuntematon",
+          xp: v.xp,
+          stories: v.stories,
+        }))
+        .sort((a, b) => b.xp - a.xp)
+        .slice(0, 10);
+      return { id: b.id, label: b.name, entries };
+    }),
+  ];
+
+  const activeBoard = boards
+    .filter((b) => b.end_date)
     .sort(
       (a, b) =>
         new Date(a.end_date!).getTime() - new Date(b.end_date!).getTime()
     )[0];
-
-  // Löydettyjen tarinoiden määrä per käyttäjä.
-  const storyCount = new Map<string, number>();
-  for (const row of discoveredRes.data ?? []) {
-    storyCount.set(row.user_id, (storyCount.get(row.user_id) ?? 0) + 1);
-  }
-
-  const top = (topRes.data ?? []) as Pick<
-    Profile,
-    "id" | "username" | "total_xp"
-  >[];
-  const inTop = top.some((p) => p.id === user.id);
-  const myXp = meRes.data?.total_xp ?? 0;
-
-  // Oma sijoitus jos ei top 10:ssä: montako pelaajaa on edellä.
-  let myRank: number | null = null;
-  if (!inTop) {
-    const { count } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .gt("total_xp", myXp);
-    myRank = (count ?? 0) + 1;
-  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -86,82 +137,7 @@ export default async function LeaderboardPage() {
           )}
         </header>
 
-        {top.length === 0 ? (
-          <div className="card p-8 text-center text-cream/70">
-            Ei pelaajia vielä.
-          </div>
-        ) : (
-          <ol className="space-y-2.5">
-            {top.map((p, i) => {
-              const isMe = p.id === user.id;
-              const medal = i < 3 ? MEDALS[i] : null;
-              const glow = i < 3 ? GLOW[i] : "border-white/10 bg-ocean/40";
-              return (
-                <li
-                  key={p.id}
-                  className={`flex items-center gap-3 rounded-2xl border p-3 ${glow} ${
-                    isMe ? "ring-2 ring-blue-400" : ""
-                  }`}
-                >
-                  {/* Sijoitus / mitali */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-                    {medal ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={medal} alt={`Sija ${i + 1}`} className="h-10 w-10" />
-                    ) : (
-                      <span className="text-lg font-extrabold text-cream/70">
-                        {i + 1}.
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Nimimerkki */}
-                  <span className="min-w-0 flex-1 truncate font-bold text-cream">
-                    {p.username}
-                    {isMe && (
-                      <span className="ml-1.5 text-xs font-normal text-blue-300">
-                        (sinä)
-                      </span>
-                    )}
-                  </span>
-
-                  {/* XP + tarinat */}
-                  <div className="flex shrink-0 flex-col items-end gap-0.5 text-sm">
-                    <span className="flex items-center gap-1 font-extrabold text-gold">
-                      {p.total_xp}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/icons/xp.svg" alt="XP" className="h-4 w-4" />
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-cream/60">
-                      {storyCount.get(p.id) ?? 0}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/icons/tarinakirja.svg"
-                        alt="tarinaa"
-                        className="h-4 w-4"
-                      />
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-
-        {/* Oma sijoitus jos ei top 10:ssä */}
-        {myRank !== null && (
-          <div className="rounded-2xl border-2 border-blue-400 bg-ocean/50 p-4 text-center">
-            <p className="text-sm text-cream/80">
-              Sinun sijoituksesi:{" "}
-              <span className="font-extrabold text-cream">{myRank}.</span>
-            </p>
-            <p className="mt-1 flex items-center justify-center gap-1 text-xs text-gold">
-              {myXp}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/xp.svg" alt="XP" className="h-4 w-4" />
-            </p>
-          </div>
-        )}
+        <LeaderboardTabs tabs={tabs} userId={user.id} />
       </main>
 
       <BottomNav />
