@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  fetchRelations,
-  relationToPolygons,
+  fetchAreaCandidates,
   combineToMultiPolygon,
   centerOf,
   type LonLat,
   type MultiPolygon,
+  type FetchStage,
 } from "@/lib/overpass";
 import BoundaryPreview from "@/components/admin/BoundaryPreview";
 
@@ -41,7 +41,7 @@ export default function CreateBoardForm({
   const [results, setResults] = useState<Result[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState<string[]>([]);
+  const [issues, setIssues] = useState<string[]>([]);
   const [info, setInfo] = useState<string | null>(null);
   const [boundary, setBoundary] = useState<MultiPolygon | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -77,20 +77,30 @@ export default function CreateBoardForm({
     setFetching(true);
     setError(null);
     setInfo(null);
-    setNotFound([]);
+    setIssues([]);
     setStatus(null);
+
+    const stageLabel: Record<FetchStage, string> = {
+      boundary: "boundary",
+      place: "place",
+      node: "node",
+    };
+
     try {
       const res: Result[] = [];
-      const missing: string[] = [];
+      const problems: string[] = [];
       for (const n of names) {
-        setStatus(`Haetaan: ${n}…`);
-        const rels = await fetchRelations(n);
-        const options: Option[] = rels.map((r) => ({
-          id: r.id,
-          label: `${r.tags.name ?? n} (taso ${r.tags.admin_level}, id ${r.id})`,
-          polygons: relationToPolygons(r),
-        }));
-        if (options.length === 0) missing.push(n);
+        const result = await fetchAreaCandidates(n, (stage) =>
+          setStatus(`Haetaan ${n} (${stageLabel[stage]})…`)
+        );
+        const options: Option[] = result.candidates;
+        if (options.length === 0) {
+          problems.push(
+            result.nodeOnly
+              ? `${n} löytyi kartalta mutta sillä ei ole alueen rajoja OSM:ssä. Lisää alue ilman rajoja ja päivitä ne myöhemmin.`
+              : `Ei löydetty: ${n}. Kokeile eri kirjoitusasua tai lisää alue ilman rajoja.`
+          );
+        }
         res.push({
           neighborhood: n,
           options,
@@ -98,7 +108,7 @@ export default function CreateBoardForm({
         });
       }
       setResults(res);
-      setNotFound(missing);
+      setIssues(problems);
       const anyFound = res.some((r) => r.options.length > 0);
       if (!anyFound) {
         setInfo(
@@ -247,10 +257,9 @@ export default function CreateBoardForm({
 
         {status && <p className="text-xs text-gold">{status}</p>}
         {info && <p className="text-xs text-cream/70">{info}</p>}
-        {notFound.map((n) => (
-          <p key={n} className="text-xs text-red-400">
-            Ei löydetty: {n}. Kokeile eri kirjoitusasua tai lisää alue ilman
-            rajoja.
+        {issues.map((msg, i) => (
+          <p key={i} className="text-xs text-red-400">
+            {msg}
           </p>
         ))}
 

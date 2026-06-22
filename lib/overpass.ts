@@ -14,6 +14,14 @@ export type OverpassRelation = {
   members: OverpassMember[];
 };
 
+type OverpassElement = {
+  type: "relation" | "way" | "node";
+  id: number;
+  tags?: { name?: string; admin_level?: string; place?: string };
+  members?: OverpassMember[];
+  geometry?: { lat: number; lon: number }[];
+};
+
 export type MultiPolygon = {
   type: "MultiPolygon";
   coordinates: LonLat[][][];
@@ -21,45 +29,105 @@ export type MultiPolygon = {
 
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
-async function runQuery(query: string): Promise<OverpassRelation[]> {
+async function runQuery(query: string): Promise<OverpassElement[]> {
   const res = await fetch(OVERPASS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: "data=" + encodeURIComponent(query),
   });
   if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const json = (await res.json()) as { elements: OverpassRelation[] };
-  return json.elements.filter(
-    (e) => (e as { type?: string }).type === "relation"
-  );
+  const json = (await res.json()) as { elements: OverpassElement[] };
+  return json.elements ?? [];
+}
+
+/** Muunna Overpass-elementti polygoneiksi (relaatio tai way). */
+function elementToPolygons(el: OverpassElement): LonLat[][][] {
+  if (el.type === "relation" && el.members) {
+    return relationToPolygons(el as OverpassRelation);
+  }
+  if (el.type === "way" && el.geometry && el.geometry.length >= 3) {
+    const ring = el.geometry.map((p) => [p.lon, p.lat] as LonLat);
+    if (
+      ring[0][0] !== ring[ring.length - 1][0] ||
+      ring[0][1] !== ring[ring.length - 1][1]
+    ) {
+      ring.push(ring[0]);
+    }
+    return [[ring]];
+  }
+  return [];
+}
+
+export type AreaCandidate = {
+  id: number;
+  label: string;
+  polygons: LonLat[][][];
+};
+
+export type AreaFetchResult = {
+  candidates: AreaCandidate[];
+  nodeOnly: boolean;
+};
+
+export type FetchStage = "boundary" | "place" | "node";
+
+function toCandidates(name: string, els: OverpassElement[]): AreaCandidate[] {
+  return els
+    .map((el) => {
+      const polygons = elementToPolygons(el);
+      if (polygons.length === 0) return null;
+      const tag = el.tags?.admin_level
+        ? `taso ${el.tags.admin_level}`
+        : el.tags?.place ?? el.type;
+      return {
+        id: el.id,
+        label: `${el.tags?.name ?? name} (${tag}, ${el.type} ${el.id})`,
+        polygons,
+      };
+    })
+    .filter((c): c is AreaCandidate => c !== null);
 }
 
 /**
- * Hae kaupunginosan hallinnolliset rajat. Yritetään ensin admin_level 8–11,
- * ja jos ei tuloksia, ilman admin_level-rajausta.
+ * Hae kaupunginosan rajat kolmivaiheisesti:
+ * 1) boundary=administrative, 2) place=suburb/neighbourhood/…, 3) node.
  */
-export async function fetchRelations(
-  name: string
-): Promise<OverpassRelation[]> {
-  const withLevel = `
-[out:json];
-(
-  relation["name"="${name}"]["boundary"="administrative"]["admin_level"~"^(8|9|10|11)$"];
-);
-out geom;`;
-
-  let rels = await runQuery(withLevel);
-  if (rels.length > 0) return rels;
-
-  // Fallback: ilman admin_level-rajausta.
-  const noLevel = `
+export async function fetchAreaCandidates(
+  name: string,
+  onStage?: (stage: FetchStage) => void
+): Promise<AreaFetchResult> {
+  // Vaihe 1 — hallinnolliset rajat.
+  onStage?.("boundary");
+  const boundary = await runQuery(`
 [out:json];
 (
   relation["name"="${name}"]["boundary"="administrative"];
 );
-out geom;`;
-  rels = await runQuery(noLevel);
-  return rels;
+out geom;`);
+  let candidates = toCandidates(name, boundary);
+  if (candidates.length > 0) return { candidates, nodeOnly: false };
+
+  // Vaihe 2 — place-tagatut relaatiot ja wayt.
+  onStage?.("place");
+  const place = await runQuery(`
+[out:json];
+(
+  relation["name"="${name}"]["place"~"suburb|neighbourhood|quarter|village|hamlet"];
+  way["name"="${name}"]["place"~"suburb|neighbourhood|quarter|village|hamlet"];
+);
+out geom;`);
+  candidates = toCandidates(name, place);
+  if (candidates.length > 0) return { candidates, nodeOnly: false };
+
+  // Vaihe 3 — node (ei geometriaa).
+  onStage?.("node");
+  const node = await runQuery(`
+[out:json];
+(
+  node["name"="${name}"]["place"~"suburb|neighbourhood|quarter|village|hamlet"];
+);
+out geom;`);
+  return { candidates: [], nodeOnly: node.length > 0 };
 }
 
 function coordEq(a: LonLat, b: LonLat): boolean {
