@@ -19,7 +19,7 @@ export default async function AdminPage() {
 
   if (!me?.is_admin) redirect("/game-board");
 
-  const [boardsRes, storiesRes, suggRes, profilesRes, areasRes] =
+  const [boardsRes, storiesRes, suggRes, profilesRes, areasRes, discoveredRes] =
     await Promise.all([
       supabase.from("game_boards").select("*").order("name"),
       supabase
@@ -36,6 +36,7 @@ export default async function AdminPage() {
         .from("area_suggestions")
         .select("area_name, city")
         .eq("status", "pending"),
+      supabase.from("discovered_stories").select("user_id, story_id"),
     ]);
 
   const stories = (storiesRes.data ?? []) as Story[];
@@ -85,6 +86,36 @@ export default async function AdminPage() {
       !existingBoardKeys.has(`${g.areaName}|||${g.city}`)
   );
 
+  // Aluekohtaiset top-listat (pelin päättämistä varten).
+  const storyMeta = new Map<string, { board_id: string; xp: number }>();
+  for (const s of stories) {
+    storyMeta.set(s.id, { board_id: s.board_id, xp: s.xp_reward });
+  }
+  const perBoard = new Map<string, Map<string, number>>();
+  for (const d of discoveredRes.data ?? []) {
+    const meta = storyMeta.get(d.story_id);
+    if (!meta) continue;
+    let users = perBoard.get(meta.board_id);
+    if (!users) {
+      users = new Map();
+      perBoard.set(meta.board_id, users);
+    }
+    users.set(d.user_id, (users.get(d.user_id) ?? 0) + meta.xp);
+  }
+  const standings: Record<
+    string,
+    { id: string; username: string; xp: number }[]
+  > = {};
+  for (const [boardId, users] of perBoard) {
+    standings[boardId] = [...users.entries()]
+      .map(([uid, xp]) => ({
+        id: uid,
+        username: nameById.get(uid) ?? "Tuntematon",
+        xp,
+      }))
+      .sort((a, b) => b.xp - a.xp);
+  }
+
   return (
     <main className="mx-auto w-full max-w-md flex-1 space-y-5 p-5 pb-10">
       <div className="flex items-center gap-3 pt-2">
@@ -103,6 +134,7 @@ export default async function AdminPage() {
         stories={stories}
         suggestions={suggestions}
         openAreas={openAreas}
+        standings={standings}
       />
     </main>
   );

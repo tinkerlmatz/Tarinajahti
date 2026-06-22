@@ -21,6 +21,16 @@ export type GameBoard = {
   loot_title: string | null;
   loot_description: string | null;
   loot_image_url: string | null;
+  is_finished: boolean;
+  created_at: string;
+};
+
+export type Achievement = {
+  id: string;
+  user_id: string;
+  board_id: string;
+  rank: number;
+  season: string;
   created_at: string;
 };
 
@@ -107,6 +117,16 @@ export type GameBoardInsert = {
   loot_title?: string | null;
   loot_description?: string | null;
   loot_image_url?: string | null;
+  is_finished?: boolean;
+  created_at?: string;
+};
+
+export type AchievementInsert = {
+  id?: string;
+  user_id: string;
+  board_id: string;
+  rank: number;
+  season: string;
   created_at?: string;
 };
 
@@ -214,6 +234,12 @@ export type Database = {
         Row: AreaSuggestion;
         Insert: AreaSuggestionInsert;
         Update: Partial<AreaSuggestionInsert>;
+        Relationships: [];
+      };
+      achievements: {
+        Row: Achievement;
+        Insert: AchievementInsert;
+        Update: Partial<AchievementInsert>;
         Relationships: [];
       };
     };

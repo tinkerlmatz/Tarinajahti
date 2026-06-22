@@ -12,6 +12,7 @@ import type { GameBoard, Story, StorySuggestion } from "@/types/database";
 import type { MultiPolygon } from "@/lib/overpass";
 
 type OpenArea = { areaName: string; city: string; count: number };
+type Standing = { id: string; username: string; xp: number };
 
 type SuggestionWithName = StorySuggestion & { suggester_name: string };
 type BoardWithCount = GameBoard & { story_count: number };
@@ -31,12 +32,14 @@ export default function AdminPanel({
   stories,
   suggestions,
   openAreas,
+  standings,
 }: {
   userId: string;
   boards: BoardWithCount[];
   stories: Story[];
   suggestions: SuggestionWithName[];
   openAreas: OpenArea[];
+  standings: Record<string, Standing[]>;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -341,6 +344,7 @@ export default function AdminPanel({
               <BoardEditor
                 key={b.id}
                 board={b}
+                standings={standings[b.id] ?? []}
                 onSaved={() => router.refresh()}
               />
             ))}
@@ -362,13 +366,18 @@ function toLocalInput(iso: string | null): string {
 
 function BoardEditor({
   board,
+  standings,
   onSaved,
 }: {
   board: BoardWithCount;
+  standings: Standing[];
   onSaved: () => void;
 }) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const ended =
+    !!board.end_date && new Date(board.end_date).getTime() <= Date.now();
   const [city, setCity] = useState(board.city ?? "");
   const [start, setStart] = useState(toLocalInput(board.start_date));
   const [end, setEnd] = useState(toLocalInput(board.end_date));
@@ -429,6 +438,7 @@ function BoardEditor({
           <p className="text-xs text-cream/50">
             {board.story_count} tarinaa
             {board.loot_title ? ` · 🏆 ${board.loot_title}` : ""}
+            {board.is_finished ? " · ✓ päätetty" : ""}
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -518,6 +528,120 @@ function BoardEditor({
           </button>
         </div>
       )}
+
+      {/* Pelin päättäminen (päättyneet, ei vielä päätetyt) */}
+      {ended && !board.is_finished && (
+        <button
+          onClick={() => setFinishing(true)}
+          className="mt-3 w-full rounded-xl border border-gold bg-gold/10 py-2.5 text-sm font-bold text-gold transition-colors hover:bg-gold/20"
+        >
+          Päätä peli ja jaa palkinnot
+        </button>
+      )}
+
+      {finishing && (
+        <FinishGameModal
+          board={board}
+          standings={standings}
+          onClose={() => setFinishing(false)}
+          onDone={onSaved}
+        />
+      )}
+    </div>
+  );
+}
+
+function defaultSeason(endDate: string | null): string {
+  const d = endDate ? new Date(endDate) : new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${mm}/${yy}`;
+}
+
+function FinishGameModal({
+  board,
+  standings,
+  onClose,
+  onDone,
+}: {
+  board: BoardWithCount;
+  standings: Standing[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const supabase = createClient();
+  const top3 = standings.slice(0, 3);
+  const [season, setSeason] = useState(defaultSeason(board.end_date));
+  const [saving, setSaving] = useState(false);
+
+  async function confirm() {
+    setSaving(true);
+    if (top3.length > 0) {
+      await supabase.from("achievements").insert(
+        top3.map((p, i) => ({
+          user_id: p.id,
+          board_id: board.id,
+          rank: i + 1,
+          season,
+        }))
+      );
+    }
+    await supabase
+      .from("game_boards")
+      .update({ is_finished: true })
+      .eq("id", board.id);
+    setSaving(false);
+    onClose();
+    onDone();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-gold/60 bg-ocean p-6">
+        <h3 className="text-lg font-extrabold text-gold">Päätä peli</h3>
+        <p className="mt-1 text-sm text-cream/70">{board.name}</p>
+
+        <div className="mt-4 space-y-2">
+          {top3.length === 0 ? (
+            <p className="text-sm text-cream/60">
+              Ei pelaajia — palkintoja ei jaeta.
+            </p>
+          ) : (
+            top3.map((p, i) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between rounded-lg bg-night/50 px-3 py-2 text-sm"
+              >
+                <span className="text-cream">
+                  {["🥇", "🥈", "🥉"][i]} {p.username}
+                </span>
+                <span className="font-bold text-gold">{p.xp} XP</span>
+              </div>
+            ))
+          )}
+        </div>
+
+        <label className="mt-4 block text-sm font-semibold text-cream">
+          Kausi
+          <input
+            value={season}
+            onChange={(e) => setSeason(e.target.value)}
+            className="field mt-1"
+          />
+        </label>
+
+        <div className="mt-5 flex gap-2">
+          <button onClick={confirm} disabled={saving} className="btn-gold flex-1">
+            {saving ? "Jaetaan…" : "Vahvista ja jaa palkinnot"}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-white/15 px-5 text-sm font-semibold text-cream/70 hover:text-cream"
+          >
+            Peruuta
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
