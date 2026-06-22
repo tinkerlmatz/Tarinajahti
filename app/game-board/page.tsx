@@ -150,6 +150,12 @@ export default async function GameBoardPage() {
                 >
                   Pelaa
                 </Link>
+                <Link
+                  href={`/suggest-story?board=${board.id}`}
+                  className="mt-2 block rounded-xl border border-gold/60 py-2 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+                >
+                  Ehdota tarinapistettä
+                </Link>
                 {board.boundary ? (
                   <div className="mt-2 flex justify-center">
                     <ShowAreaButton boundary={board.boundary} title={board.name} />
