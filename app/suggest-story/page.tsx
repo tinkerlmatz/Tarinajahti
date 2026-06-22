@@ -16,14 +16,12 @@ export default async function SuggestStoryPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Hae kohdealue: parametrista tai ensimmäinen ei-päättynyt alue.
   const { data: boards } = await supabase.from("game_boards").select("*");
   const now = Date.now();
-  const all = (boards ?? []) as GameBoard[];
-  const board =
-    (boardParam && all.find((b) => b.id === boardParam)) ||
-    all.find((b) => !b.end_date || new Date(b.end_date).getTime() > now) ||
-    all[0];
+  // Aktiiviset tai tulossa olevat alueet (end_date tulevaisuudessa tai null).
+  const eligible = ((boards ?? []) as GameBoard[]).filter(
+    (b) => !b.end_date || new Date(b.end_date).getTime() > now
+  );
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 space-y-4 p-5 pb-10">
@@ -33,17 +31,22 @@ export default async function SuggestStoryPage({
         </h1>
         <Link
           href="/game-board"
+          aria-label="Takaisin"
           className="text-sm text-cream/60 hover:text-gold"
         >
           ←
         </Link>
       </div>
 
-      {board ? (
+      {eligible.length > 0 ? (
         <SuggestStoryForm
-          boardId={board.id}
-          boardName={board.name}
-          boundary={board.boundary}
+          boards={eligible.map((b) => ({
+            id: b.id,
+            name: b.name,
+            city: b.city,
+            boundary: b.boundary,
+          }))}
+          initialBoardId={boardParam}
           userId={user.id}
         />
       ) : (

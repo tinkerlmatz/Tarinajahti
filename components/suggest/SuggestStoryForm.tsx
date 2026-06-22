@@ -43,20 +43,31 @@ const MapPicker = dynamic(() => import("@/components/suggest/MapPicker"), {
   ssr: false,
 });
 
+type BoardOption = {
+  id: string;
+  name: string;
+  city: string | null;
+  boundary: unknown | null;
+};
+
 export default function SuggestStoryForm({
-  boardId,
-  boardName,
-  boundary,
+  boards,
+  initialBoardId,
   userId,
 }: {
-  boardId: string;
-  boardName: string;
-  boundary: unknown | null;
+  boards: BoardOption[];
+  initialBoardId?: string;
   userId: string;
 }) {
   const supabase = createClient();
 
   const MAX_MEDIA = 3;
+  const [boardId, setBoardId] = useState<string>(
+    initialBoardId && boards.some((b) => b.id === initialBoardId)
+      ? initialBoardId
+      : boards[0]?.id ?? ""
+  );
+  const boundary = boards.find((b) => b.id === boardId)?.boundary ?? null;
   const [category, setCategory] = useState<StoryCategory | null>(null);
   const [openInfo, setOpenInfo] = useState<StoryCategory | null>(null);
   const [title, setTitle] = useState("");
@@ -92,6 +103,7 @@ export default function SuggestStoryForm({
     e.preventDefault();
     setError(null);
 
+    if (!boardId) return setError("Valitse alue.");
     if (!category) return setError("Valitse tarinaluokka.");
     if (title.trim().length === 0) return setError("Anna otsikko.");
     if (description.trim().length === 0) return setError("Anna kuvaus.");
@@ -172,6 +184,28 @@ export default function SuggestStoryForm({
         Tarinapisteen tulee sijaita yleisellä alueella — ei pihoilla,
         yksityisalueilla tai muuten rajatuilla paikoilla.
       </p>
+
+      {/* Valitse alue */}
+      <div>
+        <label className="mb-1 block text-sm font-semibold text-cream">
+          Valitse alue
+        </label>
+        <select
+          value={boardId}
+          onChange={(e) => {
+            setBoardId(e.target.value);
+            setPos(null);
+          }}
+          className="field"
+        >
+          {boards.map((b) => (
+            <option key={b.id} value={b.id} className="bg-ocean">
+              {b.name}
+              {b.city ? `, ${b.city}` : ""}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Tarinaluokka */}
       <div>
@@ -329,7 +363,7 @@ export default function SuggestStoryForm({
       {/* Sijainti */}
       <div>
         <label className="mb-2 block text-sm font-semibold text-cream">
-          Sijainti ({boardName})
+          Sijainti ({boards.find((b) => b.id === boardId)?.name ?? ""})
         </label>
         <button
           type="button"
