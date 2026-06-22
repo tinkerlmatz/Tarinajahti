@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PlayTimeLeft from "@/components/leaderboard/PlayTimeLeft";
 
 export type Entry = {
   id: string;
@@ -15,6 +16,7 @@ export type Tab = {
   entries: Entry[];
   myRank?: number | null;
   myXp?: number;
+  endDate?: string | null;
 };
 
 const MEDALS = [
@@ -57,6 +59,13 @@ export default function LeaderboardTabs({
           </button>
         ))}
       </div>
+
+      {/* Countdown vain aluevälilehdellä */}
+      {tab && active !== "all" && tab.endDate && (
+        <div className="text-center">
+          <PlayTimeLeft endDate={tab.endDate} />
+        </div>
+      )}
 
       {!tab || tab.entries.length === 0 ? (
         <div className="card p-8 text-center text-cream/70">

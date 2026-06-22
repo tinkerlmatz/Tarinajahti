@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
-import PlayTimeLeft from "@/components/leaderboard/PlayTimeLeft";
 import LeaderboardTabs, {
   type Tab,
   type Entry,
@@ -116,25 +115,15 @@ export default async function LeaderboardPage() {
         }))
         .sort((a, b) => b.xp - a.xp)
         .slice(0, 10);
-      return { id: b.id, label: b.name, entries };
+      return { id: b.id, label: b.name, entries, endDate: b.end_date };
     }),
   ];
-
-  const activeBoard = boards
-    .filter((b) => b.end_date)
-    .sort(
-      (a, b) =>
-        new Date(a.end_date!).getTime() - new Date(b.end_date!).getTime()
-    )[0];
 
   return (
     <div className="flex min-h-full flex-col">
       <main className="mx-auto w-full max-w-md flex-1 space-y-5 p-5 pb-8">
-        <header className="space-y-1 pt-2 text-center">
+        <header className="pt-2 text-center">
           <h1 className="text-3xl font-extrabold text-cream">Tulokset</h1>
-          {activeBoard?.end_date && (
-            <PlayTimeLeft endDate={activeBoard.end_date} />
-          )}
         </header>
 
         <LeaderboardTabs tabs={tabs} userId={user.id} />
