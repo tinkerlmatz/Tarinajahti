@@ -10,6 +10,7 @@ export type SuggestionStatus = "pending" | "approved" | "rejected";
 export type GameBoard = {
   id: string;
   name: string;
+  city: string | null;
   description: string | null;
   center_lat: number;
   center_lng: number;
@@ -95,6 +96,7 @@ export type AreaSuggestion = {
 export type GameBoardInsert = {
   id?: string;
   name: string;
+  city?: string | null;
   description?: string | null;
   center_lat: number;
   center_lng: number;

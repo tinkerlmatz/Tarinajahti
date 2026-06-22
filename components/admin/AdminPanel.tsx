@@ -297,6 +297,7 @@ function BoardEditor({
 }) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
+  const [city, setCity] = useState(board.city ?? "");
   const [start, setStart] = useState(toLocalInput(board.start_date));
   const [end, setEnd] = useState(toLocalInput(board.end_date));
   const [lootTitle, setLootTitle] = useState(board.loot_title ?? "");
@@ -308,6 +309,7 @@ function BoardEditor({
     await supabase
       .from("game_boards")
       .update({
+        city: city.trim() || null,
         start_date: start ? new Date(start).toISOString() : null,
         end_date: end ? new Date(end).toISOString() : null,
         loot_title: lootTitle.trim() || null,
@@ -323,7 +325,10 @@ function BoardEditor({
     <div className="card p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-bold text-cream">{board.name}</p>
+          <p className="font-bold text-cream">
+            {board.name}
+            {board.city ? `, ${board.city}` : ""}
+          </p>
           <p className="text-xs text-cream/50">
             {board.story_count} tarinaa
             {board.loot_title ? ` · 🏆 ${board.loot_title}` : ""}
@@ -339,6 +344,14 @@ function BoardEditor({
 
       {open && (
         <div className="mt-4 space-y-3">
+          <label className="block text-sm font-semibold text-cream">
+            Kaupunki
+            <input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="field mt-1"
+            />
+          </label>
           <label className="block text-sm font-semibold text-cream">
             Alkaa
             <input

@@ -131,6 +131,9 @@ export default async function LoginPage({
               <p className="font-bold text-cream">
                 <span className="mr-1.5 text-green-400">🟢</span>
                 {b.name}
+                {b.city && (
+                  <span className="font-normal text-cream/50">, {b.city}</span>
+                )}
               </p>
               <p className="mt-1 text-xs text-cream/60">
                 {storyCount.get(b.id) ?? 0} tarinaa
