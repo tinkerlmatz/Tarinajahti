@@ -76,6 +76,7 @@ export default function SuggestStoryForm({
   const [files, setFiles] = useState<File[]>([]);
   const [pos, setPos] = useState<LatLng | null>(null);
   const [locating, setLocating] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -110,6 +111,9 @@ export default function SuggestStoryForm({
     if (!pos) return setError("Valitse sijainti.");
     if (boundary && !pointInBoundary(pos.lat, pos.lng, boundary)) {
       return setError("Tarina pitää sijaita pelialueella.");
+    }
+    if (!consent) {
+      return setError("Vahvista valokuvien käyttöoikeus.");
     }
 
     setSaving(true);
@@ -381,9 +385,31 @@ export default function SuggestStoryForm({
         )}
       </div>
 
+      {/* Käyttöoikeusvakuutus (pakollinen) */}
+      <label className="flex items-start gap-3 text-sm text-cream/90">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
+        />
+        <span>
+          Vakuutan, että minulla on liittämieni valokuvien käyttöoikeus
+        </span>
+      </label>
+
+      {/* Informaatioteksti */}
+      <p className="text-xs leading-relaxed text-cream/70">
+        Tarinamestari pidättää oikeuden muokata hyväksyttyjä tarinoita.
+      </p>
+
       {error && <p className="text-center text-sm text-red-400">{error}</p>}
 
-      <button type="submit" disabled={saving} className="btn-gold">
+      <button
+        type="submit"
+        disabled={saving || !consent}
+        className="btn-gold"
+      >
         {saving ? "Lähetetään…" : "Lähetä ehdotus"}
       </button>
     </form>
