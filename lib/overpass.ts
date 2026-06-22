@@ -27,17 +27,36 @@ export type MultiPolygon = {
   coordinates: LonLat[][][];
 };
 
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
 
 async function runQuery(query: string): Promise<OverpassElement[]> {
-  const res = await fetch(OVERPASS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "data=" + encodeURIComponent(query),
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const json = (await res.json()) as { elements: OverpassElement[] };
-  return json.elements ?? [];
+  let lastError: unknown = null;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const url = endpoint + "?data=" + encodeURIComponent(query);
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        mode: "cors",
+      });
+      if (!res.ok) {
+        lastError = new Error(`${endpoint}: HTTP ${res.status}`);
+        continue;
+      }
+      const json = (await res.json()) as { elements: OverpassElement[] };
+      return json.elements ?? [];
+    } catch (e) {
+      lastError = e;
+      // kokeile seuraavaa endpointtia
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Kaikki Overpass-endpointit epäonnistuivat");
 }
 
 /** Muunna Overpass-elementti polygoneiksi (relaatio tai way). */

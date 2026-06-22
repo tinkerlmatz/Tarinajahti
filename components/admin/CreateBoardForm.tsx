@@ -109,18 +109,20 @@ export default function CreateBoardForm({
       }
       setResults(res);
       setIssues(problems);
+      setStatus(null);
       const anyFound = res.some((r) => r.options.length > 0);
       if (!anyFound) {
         setInfo(
           "Rajoja ei löytynyt automaattisesti. Voit lisätä alueen ilman rajoja ja päivittää ne myöhemmin."
         );
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setStatus(`Virhe: ${msg}`);
       setInfo(
         "Rajojen haku epäonnistui. Voit lisätä alueen ilman rajoja ja päivittää ne myöhemmin."
       );
     } finally {
-      setStatus(null);
       setFetching(false);
     }
   }
