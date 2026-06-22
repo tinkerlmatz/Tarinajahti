@@ -96,12 +96,15 @@ export async function fetchAreaCandidates(
   name: string,
   onStage?: (stage: FetchStage) => void
 ): Promise<AreaFetchResult> {
-  // Vaihe 1 — hallinnolliset rajat.
+  // Vaihe 1 — hallinnolliset rajat (sekä boundary=administrative että
+  // type=boundary -relaatiot; suomalaiset kaupunginosat voivat olla
+  // jälkimmäisiä).
   onStage?.("boundary");
   const boundary = await runQuery(`
 [out:json];
 (
   relation["name"="${name}"]["boundary"="administrative"];
+  relation["name"="${name}"]["type"="boundary"]["admin_level"~"^(8|9|10|11)$"];
 );
 out geom;`);
   let candidates = toCandidates(name, boundary);
