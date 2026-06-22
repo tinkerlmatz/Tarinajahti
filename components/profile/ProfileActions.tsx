@@ -36,7 +36,10 @@ export default function ProfileActions() {
 
   return (
     <div className="space-y-2.5">
-      <button onClick={share} className="btn-gold">
+      <button
+        onClick={share}
+        className="block w-full rounded-xl border border-gold/50 py-3 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/10"
+      >
         Lähetä pelin linkki
       </button>
       <Link
