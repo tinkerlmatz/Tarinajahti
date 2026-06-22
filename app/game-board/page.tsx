@@ -8,7 +8,7 @@ import ShowAreaButton from "@/components/gameboard/ShowAreaButton";
 import type { GameBoard, AreaSuggestion } from "@/types/database";
 
 // Tarinoiden vähimmäismäärä ennen kuin alue on pelattavissa.
-const STORY_THRESHOLD = 25;
+const STORY_THRESHOLD = 15;
 // Alueehdotusten äänikynnys ennen kuin alue perustetaan.
 const AREA_VOTE_THRESHOLD = 10;
 
