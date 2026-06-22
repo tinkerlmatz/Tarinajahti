@@ -23,14 +23,30 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [profileRes, discoveredRes, storiesRes] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase
-      .from("discovered_stories")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id),
-    supabase.from("stories").select("id", { count: "exact", head: true }),
-  ]);
+  const [profileRes, discoveredRes, storiesRes, achievementsRes, boardsRes] =
+    await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).single(),
+      supabase
+        .from("discovered_stories")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+      supabase.from("stories").select("id", { count: "exact", head: true }),
+      supabase
+        .from("achievements")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("game_boards").select("id, name"),
+    ]);
+
+  const boardNameById = new Map<string, string>();
+  for (const b of boardsRes.data ?? []) boardNameById.set(b.id, b.name);
+  const achievements = achievementsRes.data ?? [];
+  const MEDALS = [
+    "/icons/mitali-kulta.svg",
+    "/icons/mitali-hopea.svg",
+    "/icons/mitali-pronssi.svg",
+  ];
 
   const profile = profileRes.data as Profile | null;
   const xp = profile?.total_xp ?? 0;
@@ -109,6 +125,43 @@ export default async function ProfilePage() {
             value={`${km(profile?.distance_cycled_meters ?? 0)} km`}
             label="Pyöräily"
           />
+        </section>
+
+        {/* Saavutukset */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-gold/80">
+            Saavutukset
+          </h2>
+          {achievements.length === 0 ? (
+            <p className="text-sm text-cream/60">
+              Ei saavutuksia vielä — pelaa ja kiipeä kärkisijoille!
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {achievements.map((a) => (
+                <div
+                  key={a.id}
+                  className="card flex items-center gap-3 p-3"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={MEDALS[a.rank - 1] ?? MEDALS[2]}
+                    alt={`Sija ${a.rank}`}
+                    className="h-10 w-10 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-cream">
+                      {boardNameById.get(a.board_id) ?? "Tuntematon alue"}
+                    </p>
+                    <p className="text-xs text-gold">Tarinajahti {a.season}</p>
+                    <p className="text-xs text-cream/50">
+                      {formatDate(a.created_at)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Admin-linkki */}
