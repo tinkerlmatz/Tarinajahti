@@ -40,6 +40,8 @@ export default function CreateBoardForm({
 
   const [results, setResults] = useState<Result[] | null>(null);
   const [fetching, setFetching] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState<string[]>([]);
   const [info, setInfo] = useState<string | null>(null);
   const [boundary, setBoundary] = useState<MultiPolygon | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,15 +77,20 @@ export default function CreateBoardForm({
     setFetching(true);
     setError(null);
     setInfo(null);
+    setNotFound([]);
+    setStatus(null);
     try {
       const res: Result[] = [];
+      const missing: string[] = [];
       for (const n of names) {
+        setStatus(`Haetaan: ${n}…`);
         const rels = await fetchRelations(n);
         const options: Option[] = rels.map((r) => ({
           id: r.id,
           label: `${r.tags.name ?? n} (taso ${r.tags.admin_level}, id ${r.id})`,
           polygons: relationToPolygons(r),
         }));
+        if (options.length === 0) missing.push(n);
         res.push({
           neighborhood: n,
           options,
@@ -91,6 +98,7 @@ export default function CreateBoardForm({
         });
       }
       setResults(res);
+      setNotFound(missing);
       const anyFound = res.some((r) => r.options.length > 0);
       if (!anyFound) {
         setInfo(
@@ -102,6 +110,7 @@ export default function CreateBoardForm({
         "Rajojen haku epäonnistui. Voit lisätä alueen ilman rajoja ja päivittää ne myöhemmin."
       );
     } finally {
+      setStatus(null);
       setFetching(false);
     }
   }
@@ -236,7 +245,14 @@ export default function CreateBoardForm({
           {fetching ? "Haetaan rajoja…" : "Hae rajat automaattisesti"}
         </button>
 
+        {status && <p className="text-xs text-gold">{status}</p>}
         {info && <p className="text-xs text-cream/70">{info}</p>}
+        {notFound.map((n) => (
+          <p key={n} className="text-xs text-red-400">
+            Ei löydetty: {n}. Kokeile eri kirjoitusasua tai lisää alue ilman
+            rajoja.
+          </p>
+        ))}
 
         {/* Useita tuloksia → valinta */}
         {results?.map(

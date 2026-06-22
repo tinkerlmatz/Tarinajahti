@@ -21,17 +21,7 @@ export type MultiPolygon = {
 
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
-/** Hae kaupunginosan relaatiot (admin_level 9 tai 10). */
-export async function fetchRelations(
-  name: string
-): Promise<OverpassRelation[]> {
-  const query = `
-[out:json];
-(
-  relation["name"="${name}"]["boundary"="administrative"]["admin_level"~"^(9|10)$"];
-);
-out geom;`;
-
+async function runQuery(query: string): Promise<OverpassRelation[]> {
   const res = await fetch(OVERPASS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -42,6 +32,34 @@ out geom;`;
   return json.elements.filter(
     (e) => (e as { type?: string }).type === "relation"
   );
+}
+
+/**
+ * Hae kaupunginosan hallinnolliset rajat. Yritetään ensin admin_level 8–11,
+ * ja jos ei tuloksia, ilman admin_level-rajausta.
+ */
+export async function fetchRelations(
+  name: string
+): Promise<OverpassRelation[]> {
+  const withLevel = `
+[out:json];
+(
+  relation["name"="${name}"]["boundary"="administrative"]["admin_level"~"^(8|9|10|11)$"];
+);
+out geom;`;
+
+  let rels = await runQuery(withLevel);
+  if (rels.length > 0) return rels;
+
+  // Fallback: ilman admin_level-rajausta.
+  const noLevel = `
+[out:json];
+(
+  relation["name"="${name}"]["boundary"="administrative"];
+);
+out geom;`;
+  rels = await runQuery(noLevel);
+  return rels;
 }
 
 function coordEq(a: LonLat, b: LonLat): boolean {
