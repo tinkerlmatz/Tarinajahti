@@ -39,6 +39,8 @@ export default function MapModal({
       });
 
       map = L.map(containerRef.current, { attributionControl: true });
+      // Aseta oletusnäkymä heti, jotta kartalla on koko/zoom ennen fitBounds.
+      map.setView([65.0, 25.54], 12);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -70,12 +72,12 @@ export default function MapModal({
         marker.bindPopup("Sinä olet tässä");
       }
 
+      // Varmista oikea koko ennen rajaukseen sovittamista.
+      map.invalidateSize();
       if (bounds && bounds.isValid()) {
         map.fitBounds(bounds, { padding: [20, 20] });
       } else if (playerPos) {
         map.setView([playerPos.lat, playerPos.lng], 15);
-      } else {
-        map.setView([65.0, 25.54], 12);
       }
       } catch (e) {
         if (!cancelled) {
