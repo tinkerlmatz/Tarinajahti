@@ -112,7 +112,7 @@ export default function SuggestStoryForm({
     if (boundary && !pointInBoundary(pos.lat, pos.lng, boundary)) {
       return setError("Tarina pitää sijaita pelialueella.");
     }
-    if (!consent) {
+    if (files.length > 0 && !consent) {
       return setError("Vahvista valokuvien käyttöoikeus.");
     }
 
@@ -385,18 +385,20 @@ export default function SuggestStoryForm({
         )}
       </div>
 
-      {/* Käyttöoikeusvakuutus (pakollinen) */}
-      <label className="flex items-start gap-3 text-sm text-cream/90">
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(e) => setConsent(e.target.checked)}
-          className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
-        />
-        <span>
-          Vakuutan, että minulla on liittämieni valokuvien käyttöoikeus
-        </span>
-      </label>
+      {/* Käyttöoikeusvakuutus — vain jos kuvia lisätty (pakollinen) */}
+      {files.length > 0 && (
+        <label className="flex items-start gap-3 text-sm text-cream/90">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-gold"
+          />
+          <span>
+            Vakuutan, että minulla on liittämieni valokuvien käyttöoikeus
+          </span>
+        </label>
+      )}
 
       {/* Informaatioteksti */}
       <p className="text-xs leading-relaxed text-cream/70">
@@ -407,7 +409,7 @@ export default function SuggestStoryForm({
 
       <button
         type="submit"
-        disabled={saving || !consent}
+        disabled={saving || (files.length > 0 && !consent)}
         className="btn-gold"
       >
         {saving ? "Lähetetään…" : "Lähetä ehdotus"}
