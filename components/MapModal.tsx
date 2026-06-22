@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 
 type LatLng = { lat: number; lng: number };
@@ -17,12 +17,14 @@ export default function MapModal({
   onClose: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let map: import("leaflet").Map | null = null;
     let cancelled = false;
 
     (async () => {
+      try {
       const L = (await import("leaflet")).default;
       if (cancelled || !containerRef.current) return;
 
@@ -75,6 +77,11 @@ export default function MapModal({
       } else {
         map.setView([65.0, 25.54], 12);
       }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      }
     })();
 
     return () => {
@@ -95,6 +102,11 @@ export default function MapModal({
           ✕
         </button>
       </div>
+      {error && (
+        <div className="border-b border-red-800 bg-red-950 p-3 text-xs text-red-300">
+          Karttavirhe: {error}
+        </div>
+      )}
       <div ref={containerRef} className="flex-1" style={{ minHeight: 0 }} />
     </div>
   );
