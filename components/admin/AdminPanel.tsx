@@ -6,7 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import StoryForm from "@/components/admin/StoryForm";
 import SuggestionEditForm from "@/components/admin/SuggestionEditForm";
 import CreateBoardForm from "@/components/admin/CreateBoardForm";
+import BoundaryFetcher from "@/components/admin/BoundaryFetcher";
+import BoundaryPreview from "@/components/admin/BoundaryPreview";
 import type { GameBoard, Story, StorySuggestion } from "@/types/database";
+import type { MultiPolygon } from "@/lib/overpass";
 
 type OpenArea = { areaName: string; city: string; count: number };
 
@@ -371,7 +374,12 @@ function BoardEditor({
   const [end, setEnd] = useState(toLocalInput(board.end_date));
   const [lootTitle, setLootTitle] = useState(board.loot_title ?? "");
   const [lootDesc, setLootDesc] = useState(board.loot_description ?? "");
+  const [newBoundary, setNewBoundary] = useState<{
+    boundary: MultiPolygon;
+    center: { lat: number; lng: number };
+  } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function save() {
     setSaving(true);
@@ -383,10 +391,30 @@ function BoardEditor({
         end_date: end ? new Date(end).toISOString() : null,
         loot_title: lootTitle.trim() || null,
         loot_description: lootDesc.trim() || null,
+        ...(newBoundary
+          ? {
+              boundary: newBoundary.boundary,
+              center_lat: newBoundary.center.lat,
+              center_lng: newBoundary.center.lng,
+            }
+          : {}),
       })
       .eq("id", board.id);
     setSaving(false);
     setOpen(false);
+    onSaved();
+  }
+
+  async function remove() {
+    if (
+      !confirm(
+        `Haluatko varmasti poistaa alueen ${board.name}? Tämä ei poista alueen tarinoita.`
+      )
+    )
+      return;
+    setDeleting(true);
+    await supabase.from("game_boards").delete().eq("id", board.id);
+    setDeleting(false);
     onSaved();
   }
 
@@ -403,12 +431,21 @@ function BoardEditor({
             {board.loot_title ? ` · 🏆 ${board.loot_title}` : ""}
           </p>
         </div>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="rounded-lg border border-gold/60 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/10"
-        >
-          {open ? "Sulje" : "Muokkaa"}
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="rounded-lg border border-gold/60 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/10"
+          >
+            {open ? "Sulje" : "Muokkaa"}
+          </button>
+          <button
+            onClick={remove}
+            disabled={deleting}
+            className="rounded-lg border border-red-500/50 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            Poista
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -456,6 +493,26 @@ function BoardEditor({
               className="field mt-1 resize-none"
             />
           </label>
+          {/* Rajat */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-cream">Alueen rajat</p>
+            {newBoundary ? (
+              <p className="text-xs text-gold">
+                ✓ Uudet rajat haettu — tallenna ottaaksesi käyttöön.
+              </p>
+            ) : board.boundary ? (
+              <BoundaryPreview boundary={board.boundary} />
+            ) : (
+              <p className="text-xs text-cream/50">Rajoja ei ole asetettu.</p>
+            )}
+            <BoundaryFetcher
+              initialNeighborhoods={board.name.split("–").map((s) => s.trim())}
+              onAccept={(boundary, center) =>
+                setNewBoundary({ boundary, center })
+              }
+            />
+          </div>
+
           <button onClick={save} disabled={saving} className="btn-gold">
             {saving ? "Tallennetaan…" : "Tallenna"}
           </button>
