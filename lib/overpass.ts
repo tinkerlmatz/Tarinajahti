@@ -33,15 +33,22 @@ const OVERPASS_ENDPOINTS = [
   "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ];
 
+const FETCH_TIMEOUT_MS = 10000;
+
 async function runQuery(query: string): Promise<OverpassElement[]> {
   let lastError: unknown = null;
+  let timedOutCount = 0;
+
   for (const endpoint of OVERPASS_ENDPOINTS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
       const url = endpoint + "?data=" + encodeURIComponent(query);
       const res = await fetch(url, {
         method: "GET",
         headers: { Accept: "application/json" },
         mode: "cors",
+        signal: controller.signal,
       });
       if (!res.ok) {
         lastError = new Error(`${endpoint}: HTTP ${res.status}`);
@@ -50,9 +57,22 @@ async function runQuery(query: string): Promise<OverpassElement[]> {
       const json = (await res.json()) as { elements: OverpassElement[] };
       return json.elements ?? [];
     } catch (e) {
-      lastError = e;
+      if (e instanceof DOMException && e.name === "AbortError") {
+        timedOutCount += 1;
+        lastError = new Error(`${endpoint}: aikakatkaisu`);
+      } else {
+        lastError = e;
+      }
       // kokeile seuraavaa endpointtia
+    } finally {
+      clearTimeout(timeout);
     }
+  }
+
+  if (timedOutCount === OVERPASS_ENDPOINTS.length) {
+    throw new Error(
+      "Overpass API ei vastaa juuri nyt. Yritä hetken kuluttua uudelleen tai lisää alue ilman rajoja."
+    );
   }
   throw lastError instanceof Error
     ? lastError
