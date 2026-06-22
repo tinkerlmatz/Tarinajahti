@@ -387,9 +387,14 @@ export default function PlayView({
           <button
             onClick={() => setShowMap(true)}
             aria-label="Näytä kartta"
-            className="text-lg transition-transform hover:scale-110"
+            className="transition-transform hover:scale-110"
           >
-            🗺️
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/karttanappi.svg"
+              alt="Näytä kartta"
+              className="h-11 w-11"
+            />
           </button>
           <span className="whitespace-nowrap text-xs font-semibold text-cream/80">
             {discovered.size}/{stories.length} 📖

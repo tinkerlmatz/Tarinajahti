@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72">
+  <defs>
+    <radialGradient id="mapBtn" cx="35%" cy="28%" r="80%"><stop offset="0%" stop-color="#ffe49c"></stop><stop offset="55%" stop-color="#F4B942"></stop><stop offset="100%" stop-color="#c8902a"></stop></radialGradient>
+    <filter id="mapds" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.4"></feDropShadow></filter>
+  </defs>
+  <circle class="ring" cx="36" cy="36" r="32" fill="none" stroke="#F4B942" stroke-width="2"></circle>
+  <circle cx="36" cy="36" r="32" fill="url(#mapBtn)" stroke="#ffe49c" stroke-width="2" filter="url(#mapds)"></circle>
+  <g transform="translate(20,20)">
+    <path d="M16 28 C16 28 25 19.5 25 13 A9 9 0 1 0 7 13 C7 19.5 16 28 16 28 Z" fill="#0a1827" fill-opacity=".14" stroke="#0a1827" stroke-width="2.4" stroke-linejoin="round"></path>
+    <circle cx="16" cy="13" r="3.4" fill="#0a1827"></circle>
+  </g>
+</svg>
