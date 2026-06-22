@@ -106,7 +106,7 @@ export default function MapModal({
       </div>
       {error && (
         <div className="border-b border-red-800 bg-red-950 p-3 text-xs text-red-300">
-          Karttavirhe: {error}
+          Kartan lataus epäonnistui. Yritä uudelleen.
         </div>
       )}
       <div ref={containerRef} className="flex-1" style={{ minHeight: 0 }} />
