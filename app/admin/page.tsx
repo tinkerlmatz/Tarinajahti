@@ -19,16 +19,24 @@ export default async function AdminPage() {
 
   if (!me?.is_admin) redirect("/game-board");
 
-  const [boardsRes, storiesRes, suggRes, profilesRes] = await Promise.all([
-    supabase.from("game_boards").select("*").order("name"),
-    supabase.from("stories").select("*").order("created_at", { ascending: false }),
-    supabase
-      .from("story_suggestions")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, username"),
-  ]);
+  const [boardsRes, storiesRes, suggRes, profilesRes, areasRes] =
+    await Promise.all([
+      supabase.from("game_boards").select("*").order("name"),
+      supabase
+        .from("stories")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("story_suggestions")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id, username"),
+      supabase
+        .from("area_suggestions")
+        .select("area_name, city")
+        .eq("status", "pending"),
+    ]);
 
   const stories = (storiesRes.data ?? []) as Story[];
   const boardsRaw = (boardsRes.data ?? []) as GameBoard[];
@@ -53,6 +61,30 @@ export default async function AdminPage() {
     suggester_name: nameById.get(s.suggested_by) ?? "Tuntematon",
   }));
 
+  // Avoimet alue-ehdotukset: ryhmitelty, count >= 10, ei vielä aluetta.
+  const existingBoardKeys = new Set(
+    boardsRaw.map((b) => `${b.name}|||${b.city ?? ""}`)
+  );
+  const areaGroups = new Map<
+    string,
+    { areaName: string; city: string; count: number }
+  >();
+  for (const a of areasRes.data ?? []) {
+    const key = `${a.area_name}|||${a.city}`;
+    const g = areaGroups.get(key) ?? {
+      areaName: a.area_name,
+      city: a.city,
+      count: 0,
+    };
+    g.count += 1;
+    areaGroups.set(key, g);
+  }
+  const openAreas = [...areaGroups.values()].filter(
+    (g) =>
+      g.count >= 10 &&
+      !existingBoardKeys.has(`${g.areaName}|||${g.city}`)
+  );
+
   return (
     <main className="mx-auto w-full max-w-md flex-1 space-y-5 p-5 pb-10">
       <div className="flex items-center gap-3 pt-2">
@@ -70,6 +102,7 @@ export default async function AdminPage() {
         boards={boards}
         stories={stories}
         suggestions={suggestions}
+        openAreas={openAreas}
       />
     </main>
   );

@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import StoryForm from "@/components/admin/StoryForm";
 import SuggestionEditForm from "@/components/admin/SuggestionEditForm";
+import CreateBoardForm from "@/components/admin/CreateBoardForm";
 import type { GameBoard, Story, StorySuggestion } from "@/types/database";
+
+type OpenArea = { areaName: string; city: string; count: number };
 
 type SuggestionWithName = StorySuggestion & { suggester_name: string };
 type BoardWithCount = GameBoard & { story_count: number };
@@ -24,11 +27,13 @@ export default function AdminPanel({
   boards,
   stories,
   suggestions,
+  openAreas,
 }: {
   userId: string;
   boards: BoardWithCount[];
   stories: Story[];
   suggestions: SuggestionWithName[];
+  openAreas: OpenArea[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -37,12 +42,18 @@ export default function AdminPanel({
   const [adding, setAdding] = useState(false);
   const [editingSuggestion, setEditingSuggestion] =
     useState<SuggestionWithName | null>(null);
+  const [creatingBoard, setCreatingBoard] = useState<{
+    name?: string;
+    city?: string;
+    neighborhoods?: string[];
+  } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   function refresh() {
     setEditing(null);
     setAdding(false);
     setEditingSuggestion(null);
+    setCreatingBoard(null);
     router.refresh();
   }
 
@@ -125,6 +136,16 @@ export default function AdminPanel({
         boards={boards}
         onDone={refresh}
         onCancel={() => setEditingSuggestion(null)}
+      />
+    );
+  }
+
+  if (creatingBoard) {
+    return (
+      <CreateBoardForm
+        prefill={creatingBoard}
+        onDone={refresh}
+        onCancel={() => setCreatingBoard(null)}
       />
     );
   }
@@ -269,10 +290,58 @@ export default function AdminPanel({
 
       {/* ALUEET */}
       {tab === "Alueet" && (
-        <div className="space-y-3">
-          {boards.map((b) => (
-            <BoardEditor key={b.id} board={b} onSaved={() => router.refresh()} />
-          ))}
+        <div className="space-y-4">
+          <button onClick={() => setCreatingBoard({})} className="btn-gold">
+            Luo uusi alue
+          </button>
+
+          {/* Avoimet alue-ehdotukset (>=10, ei vielä aluetta) */}
+          {openAreas.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-gold/80">
+                Avoimet alue-ehdotukset
+              </h3>
+              {openAreas.map((a) => (
+                <div
+                  key={`${a.areaName}|${a.city}`}
+                  className="card flex items-center justify-between gap-3 p-4"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-cream">
+                      {a.areaName}
+                      <span className="font-normal text-cream/50">
+                        , {a.city}
+                      </span>
+                    </p>
+                    <p className="text-xs text-cream/50">{a.count} ehdotusta</p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCreatingBoard({
+                        name: a.areaName,
+                        city: a.city,
+                        neighborhoods: [a.areaName],
+                      })
+                    }
+                    className="shrink-0 rounded-lg bg-gold/90 px-3 py-1.5 text-xs font-bold text-night hover:bg-gold"
+                  >
+                    Luo alue tästä
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Olemassa olevat alueet */}
+          <div className="space-y-3">
+            {boards.map((b) => (
+              <BoardEditor
+                key={b.id}
+                board={b}
+                onSaved={() => router.refresh()}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
