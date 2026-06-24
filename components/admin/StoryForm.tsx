@@ -15,6 +15,19 @@ const CATEGORIES: { value: StoryCategory; label: string }[] = [
   { value: "muisto", label: "Muisto" },
 ];
 
+const PRESET_TAGS = [
+  "urheilu",
+  "kirjallisuus",
+  "taide",
+  "arkkitehtuuri",
+  "henkilö",
+  "luonto",
+  "teollisuus",
+  "sota",
+  "liikenne",
+  "yhteisö",
+];
+
 type LatLng = { lat: number; lng: number };
 
 export default function StoryForm({
@@ -42,6 +55,8 @@ export default function StoryForm({
   const [radius, setRadius] = useState(story?.discovery_radius_meters ?? 15);
   const [videoUrl, setVideoUrl] = useState(story?.video_url ?? "");
   const [externalLink, setExternalLink] = useState(story?.external_link ?? "");
+  const [teaser, setTeaser] = useState(story?.teaser ?? "");
+  const [tags, setTags] = useState<string[]>(story?.tags ?? []);
   const [file, setFile] = useState<File | null>(null);
   const [pos, setPos] = useState<LatLng | null>(
     story ? { lat: story.lat, lng: story.lng } : null
@@ -89,6 +104,8 @@ export default function StoryForm({
       image_url: imageUrl,
       video_url: videoUrl.trim() || null,
       external_link: externalLink.trim() || null,
+      teaser: teaser.trim() || null,
+      tags: tags.length > 0 ? tags : null,
     };
 
     const { error: dbErr } = story
@@ -207,6 +224,59 @@ export default function StoryForm({
           value={externalLink}
           onChange={(e) => setExternalLink(e.target.value)}
           className="field"
+        />
+      </Field>
+
+      <Field label="Houkutteluteksti (teaser)">
+        <input
+          type="text"
+          value={teaser}
+          onChange={(e) => setTeaser(e.target.value)}
+          maxLength={100}
+          className="field"
+          placeholder="Esim. Kärppälegendan jäljillä…"
+        />
+        <p className="mt-1 text-xs text-cream/50">
+          Lyhyt innostava teksti joka näkyy pelaajalle ennen tarinan löytymistä.
+        </p>
+      </Field>
+
+      <Field label="Teemat">
+        <div className="flex flex-wrap gap-2">
+          {[...PRESET_TAGS, ...tags.filter((t) => !PRESET_TAGS.includes(t))].map(
+            (t) => {
+              const on = tags.includes(t);
+              return (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() =>
+                    setTags(on ? tags.filter((x) => x !== t) : [...tags, t])
+                  }
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    on
+                      ? "border-gold bg-gold/15 text-gold"
+                      : "border-white/10 bg-ocean/40 text-cream/70 hover:border-gold/40"
+                  }`}
+                >
+                  {t}
+                </button>
+              );
+            }
+          )}
+        </div>
+        <input
+          type="text"
+          placeholder="Lisää oma teema ja paina Enter"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const v = e.currentTarget.value.trim().toLowerCase();
+              if (v && !tags.includes(v)) setTags([...tags, v]);
+              e.currentTarget.value = "";
+            }
+          }}
+          className="field mt-2"
         />
       </Field>
 

@@ -47,6 +47,8 @@ export type Story = {
   image_url: string | null;
   external_link: string | null;
   video_url: string | null;
+  teaser: string | null;
+  tags: string[] | null;
   created_by: string | null;
   created_at: string;
 };
@@ -143,6 +145,8 @@ export type StoryInsert = {
   image_url?: string | null;
   external_link?: string | null;
   video_url?: string | null;
+  teaser?: string | null;
+  tags?: string[] | null;
   created_by?: string | null;
   created_at?: string;
 };

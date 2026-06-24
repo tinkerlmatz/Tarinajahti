@@ -420,7 +420,7 @@ export default function PlayView({
             <>
               {showHint && (
                 <div className="animate-pulse rounded-full border border-gold/60 bg-gold/15 px-5 py-2 text-sm font-semibold text-gold shadow-glow">
-                  Jotain kiinnostavaa lähistöllä…
+                  Nyt ollaan jo lähellä…
                 </div>
               )}
 
@@ -432,10 +432,18 @@ export default function PlayView({
                 <Compass rotation={arrowAngle} dim={!hasRotation} />
               </div>
 
-              <p className="text-center text-lg font-semibold text-cream">
-                {targetDist !== null && formatDistance(targetDist)}{" "}
-                <span className="text-gold">kohteeseen</span>
-              </p>
+              <div className="text-center">
+                {/* VAIHE 1 (kaukana): teaser jos sellainen on */}
+                {!showHint && target.teaser && (
+                  <p className="mb-1 max-w-xs text-sm italic text-gold/90">
+                    {target.teaser}
+                  </p>
+                )}
+                <p className="text-lg font-semibold text-cream">
+                  {targetDist !== null && formatDistance(targetDist)}{" "}
+                  <span className="text-gold">kohteeseen</span>
+                </p>
+              </div>
 
               {undiscoveredCount > 1 && (
                 <button
