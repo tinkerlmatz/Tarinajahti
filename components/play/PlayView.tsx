@@ -75,6 +75,7 @@ export default function PlayView({
   const [summary, setSummary] = useState<Summary | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [targetId, setTargetId] = useState<string | null>(null);
+  const [showGpsBanner, setShowGpsBanner] = useState(false);
   // GPS-pohjainen kulkusuunta (fallback laiteanturille).
   const [gpsHeading, setGpsHeading] = useState<number | null>(null);
   const headingAnchor = useRef<{ lat: number; lng: number } | null>(null);
@@ -112,6 +113,16 @@ export default function PlayView({
   const requireFar = useRef(false); // seuraava kohde >= 500m
   const overlayOpen = useRef(false); // animaatio/modaali/yhteenveto auki
   const ended = useRef(false);
+
+  // GPS-huomiobanneri kerran per sessio (auto-häivytys 5 s).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("gpsBannerSeen")) return;
+    sessionStorage.setItem("gpsBannerSeen", "1");
+    setShowGpsBanner(true);
+    const t = setTimeout(() => setShowGpsBanner(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
 
   // Pidä overlay-tila refissä position-käsittelijää varten.
   useEffect(() => {
@@ -403,6 +414,22 @@ export default function PlayView({
         </div>
       </header>
 
+      {/* GPS-huomiobanneri */}
+      {showGpsBanner && (
+        <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-gold/40 bg-night/80 px-4 py-2.5">
+          <p className="text-xs font-semibold text-gold">
+            📍 Pidä sovellus auki ja näyttö päällä kilometrien kirjaamiseksi
+          </p>
+          <button
+            onClick={() => setShowGpsBanner(false)}
+            aria-label="Sulje"
+            className="shrink-0 text-cream/60 hover:text-cream"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Pääsisältö */}
       <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
         {error ? (
@@ -469,20 +496,12 @@ export default function PlayView({
                 </button>
               )}
 
-              <div className="flex flex-col items-center gap-2">
-                <Link
-                  href={`/suggest-story?board=${board.id}`}
-                  className="text-xs font-semibold text-gold/80 underline-offset-2 transition-colors hover:text-gold hover:underline"
-                >
-                  Ehdota tarinapistettä
-                </Link>
-                <button
-                  onClick={endSession}
-                  className="text-xs font-semibold text-cream/50 underline-offset-2 transition-colors hover:text-cream/80 hover:underline"
-                >
-                  Lopeta jahti
-                </button>
-              </div>
+              <button
+                onClick={endSession}
+                className="text-xs font-semibold text-cream/50 underline-offset-2 transition-colors hover:text-cream/80 hover:underline"
+              >
+                Lopeta jahti
+              </button>
             </>
           )
         )}
