@@ -187,7 +187,7 @@ export default function AdminPanel({
           ) : (
             stories.map((s) => (
               <div key={s.id} className="card p-4">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-bold text-cream">{s.title}</p>
                     <p className="text-xs text-cream/50">
@@ -195,6 +195,18 @@ export default function AdminPanel({
                       {s.lng.toFixed(4)}
                     </p>
                   </div>
+                  {s.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={s.image_url}
+                      alt=""
+                      className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-night/60 text-xl text-cream/40">
+                      🖼️
+                    </div>
+                  )}
                 </div>
                 <div className="mt-3 flex gap-2">
                   <button

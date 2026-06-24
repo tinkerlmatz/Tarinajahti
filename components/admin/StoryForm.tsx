@@ -58,6 +58,7 @@ export default function StoryForm({
   const [teaser, setTeaser] = useState(story?.teaser ?? "");
   const [tags, setTags] = useState<string[]>(story?.tags ?? []);
   const [file, setFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [pos, setPos] = useState<LatLng | null>(
     story ? { lat: story.lat, lng: story.lng } : null
   );
@@ -77,6 +78,7 @@ export default function StoryForm({
     setSaving(true);
 
     let imageUrl = story?.image_url ?? null;
+    if (removeImage) imageUrl = null;
     if (file) {
       const ext = file.name.split(".").pop() ?? "jpg";
       const path = `${Date.now()}.${ext}`;
@@ -201,12 +203,31 @@ export default function StoryForm({
       </div>
 
       <Field label="Kuva (valinnainen)">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-cream/70 file:mr-3 file:rounded-lg file:border-0 file:bg-gold file:px-3 file:py-1.5 file:font-semibold file:text-night"
-        />
+        {story?.image_url && !removeImage && !file ? (
+          <div className="mb-2 flex items-start gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={story.image_url}
+              alt=""
+              className="max-h-[120px] max-w-[120px] rounded-lg object-cover"
+            />
+            <button
+              type="button"
+              onClick={() => setRemoveImage(true)}
+              aria-label="Poista kuva"
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-red-500/50 text-red-400 hover:bg-red-500/10"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-cream/70 file:mr-3 file:rounded-lg file:border-0 file:bg-gold file:px-3 file:py-1.5 file:font-semibold file:text-night"
+          />
+        )}
       </Field>
 
       <Field label="Videolinkki (valinnainen)">
