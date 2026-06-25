@@ -103,6 +103,7 @@ export default async function LeaderboardPage() {
       label: "Kaikki alueet",
       entries: globalEntries,
       myRank,
+      playerCount: nameById.size,
     },
     ...boards.map((b) => {
       const users = perBoard.get(b.id) ?? new Map();
@@ -115,7 +116,13 @@ export default async function LeaderboardPage() {
         }))
         .sort((a, b) => b.xp - a.xp)
         .slice(0, 10);
-      return { id: b.id, label: b.name, entries, endDate: b.end_date };
+      return {
+        id: b.id,
+        label: b.name,
+        entries,
+        endDate: b.end_date,
+        playerCount: users.size,
+      };
     }),
   ];
 

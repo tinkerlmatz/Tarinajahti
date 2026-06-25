@@ -17,6 +17,7 @@ export type Tab = {
   myRank?: number | null;
   myXp?: number;
   endDate?: string | null;
+  playerCount?: number;
 };
 
 const MEDALS = [
@@ -65,6 +66,13 @@ export default function LeaderboardTabs({
         <div className="text-center">
           <PlayTimeLeft endDate={tab.endDate} />
         </div>
+      )}
+
+      {/* Pelaajamäärä */}
+      {tab?.playerCount != null && (
+        <p className="text-center text-sm text-cream/60">
+          {tab.playerCount} pelaajaa mukana
+        </p>
       )}
 
       {!tab || tab.entries.length === 0 ? (

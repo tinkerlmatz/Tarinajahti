@@ -28,15 +28,31 @@ export default async function GameBoardPage() {
 
   if (!user) redirect("/login");
 
-  const [boardsRes, storiesRes, areasRes] = await Promise.all([
+  const [boardsRes, storiesRes, areasRes, discoveredRes] = await Promise.all([
     supabase.from("game_boards").select("*").order("name"),
-    supabase.from("stories").select("board_id"),
+    supabase.from("stories").select("id, board_id"),
     supabase.from("area_suggestions").select("*"),
+    supabase.from("discovered_stories").select("user_id, story_id"),
   ]);
 
   const boards = boardsRes.data;
   const storyRows = storiesRes.data;
   const areaRows = areasRes.data;
+
+  // Pelaajamäärä per alue: distinct user_id discovered_storiesista.
+  const storyToBoard = new Map<string, string>();
+  for (const row of storyRows ?? []) storyToBoard.set(row.id, row.board_id);
+  const playersByBoard = new Map<string, Set<string>>();
+  for (const d of discoveredRes.data ?? []) {
+    const boardId = storyToBoard.get(d.story_id);
+    if (!boardId) continue;
+    let set = playersByBoard.get(boardId);
+    if (!set) {
+      set = new Set();
+      playersByBoard.set(boardId, set);
+    }
+    set.add(d.user_id);
+  }
 
   // --- DEBUG: tulosta mitä Supabase palauttaa (näkyy palvelinlokissa) ---
   console.log("[game-board] boards error:", boardsRes.error);
@@ -125,7 +141,8 @@ export default async function GameBoardPage() {
                     {board.name}
                   </h3>
                   <span className="shrink-0 rounded-full bg-gold/20 px-2.5 py-1 text-xs font-semibold text-gold">
-                    {storyCount.get(board.id) ?? 0} tarinaa
+                    {storyCount.get(board.id) ?? 0} tarinaa ·{" "}
+                    {playersByBoard.get(board.id)?.size ?? 0} pelaajaa
                   </span>
                 </div>
                 {board.description && (
