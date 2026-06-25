@@ -27,6 +27,17 @@ const DEFAULT_DISCOVERY_M = 15; // tarinan avautuminen
 const FLUSH_INTERVAL_MS = 30000; // matkan kirjaus kantaan max 1x / 30s
 const MIN_NEXT_DISTANCE_M = 500; // minimietäisyys seuraavaan tarinaan jatkettaessa
 
+// --- Matkan luokittelu (kävely/pyöräily) ---
+// Luokittelu tehdään KESKInopeudesta lyhyissä aikaikkunoissa, ei yksittäisen
+// GPS-pisteparin hetkellisnopeudesta. Hetkellisnopeus on kävelyvauhdissa niin
+// kohinaherkkä (lyhyt dt / GPS-jitter → valenopeuspiikki), että kävely
+// luokittuisi pyöräilyksi tai hylättäisiin (>25 km/h). Ikkunointi tasoittaa.
+const CLASSIFY_WINDOW_MS = 5000; // luokittele keskinopeus ~5 s ikkunoissa
+const MIN_WINDOW_MS = 1500; // älä luokittele liian lyhyttä ikkunaa
+const MAX_ACCURACY_M = 50; // hylkää tätä epätarkemmat sijainnit
+const WALK_MAX_KMH = 7.5; // ≤ tämä = kävely (reipas kävely mukaan)
+const CYCLE_MAX_KMH = 25; // ≤ tämä = pyöräily, yli = ei kirjata
+
 // km-pisteet: kävely 1 XP/km, pyöräily 0,5 XP/km (pyöristys alas).
 function walkXpFrom(meters: number) {
   return Math.floor(meters / 1000);
@@ -92,6 +103,24 @@ export default function PlayView({
   );
   const navigateAfterLevelUp = useRef(false);
 
+  // Kirjaa kumuloitunut ikkuna keskinopeuden perusteella kävelyyn/pyöräilyyn.
+  function commitSegment(now: number) {
+    const start = segAnchorT.current;
+    if (start === null || segDist.current <= 0) {
+      segAnchorT.current = now;
+      return;
+    }
+    const windowMs = now - start;
+    if (windowMs >= MIN_WINDOW_MS) {
+      const avgKmh = (segDist.current / (windowMs / 1000)) * 3.6;
+      if (avgKmh <= WALK_MAX_KMH) accWalk.current += segDist.current;
+      else if (avgKmh <= CYCLE_MAX_KMH) accCycle.current += segDist.current;
+      // yli CYCLE_MAX_KMH → ajoneuvo, ei kirjata
+      segDist.current = 0;
+      segAnchorT.current = now;
+    }
+  }
+
   function maybeLevelUp(before: number, after: number) {
     const b = getLevel(before).level;
     const a = getLevel(after).level;
@@ -104,6 +133,9 @@ export default function PlayView({
 
   // Refit (eivät aiheuta uudelleenrenderöintiä).
   const prevPos = useRef<{ lat: number; lng: number; t: number } | null>(null);
+  // Luokitteluikkuna: kumuloitu matka + ikkunan alkuhetki.
+  const segDist = useRef(0);
+  const segAnchorT = useRef<number | null>(null);
   const accWalk = useRef(0);
   const accCycle = useRef(0);
   const accXp = useRef(0); // session aikana löydettyjen tarinoiden XP
@@ -184,21 +216,31 @@ export default function PlayView({
       setError(null);
 
       const now = Date.now();
-      const prev = prevPos.current;
       // Matka kirjataan vain pelialueen rajojen sisällä (jos rajat määritelty).
       const inside =
         !board.boundary || pointInBoundary(p.lat, p.lng, board.boundary);
-      if (prev && inside) {
-        const d = haversineDistance(prev.lat, prev.lng, p.lat, p.lng);
-        const dtSec = (now - prev.t) / 1000;
-        if (dtSec > 0 && d >= 1) {
-          const speedKmh = (d / dtSec) * 3.6;
-          if (speedKmh <= 6) accWalk.current += d;
-          else if (speedKmh <= 25) accCycle.current += d;
-          // yli 25 km/h → ei kirjata
+      // Tarkkuussuodatus: epätarkka fix tuottaa jitteriä → ei luoteta siihen.
+      const accurate = coords.accuracy <= MAX_ACCURACY_M;
+
+      if (!inside) {
+        // Rajojen ulkopuolella: nollaa ikkuna, ei kirjata.
+        segDist.current = 0;
+        segAnchorT.current = null;
+        prevPos.current = { lat: p.lat, lng: p.lng, t: now };
+      } else if (accurate) {
+        const prev = prevPos.current;
+        if (prev) {
+          const d = haversineDistance(prev.lat, prev.lng, p.lat, p.lng);
+          if (d >= 0.5) segDist.current += d; // ohita lähes paikallaan-fixit
         }
+        if (segAnchorT.current === null) segAnchorT.current = now;
+        // Luokittele kun ikkuna on täynnä (keskinopeudesta).
+        if (now - segAnchorT.current >= CLASSIFY_WINDOW_MS) commitSegment(now);
+        prevPos.current = { lat: p.lat, lng: p.lng, t: now };
       }
-      prevPos.current = { lat: p.lat, lng: p.lng, t: now };
+      // Epätarkka fix sisäalueella: ei päivitetä prevPos/ikkunaa → odotetaan
+      // parempaa sijaintia (matka kirjataan sitten suorana kahden hyvän fixin
+      // välillä, jolloin keskinopeus pysyy oikeana).
 
       // GPS-kulkusuunta: päivitä kun on liikuttu väh. 5 m ankkurista.
       const anchor = headingAnchor.current;
@@ -240,8 +282,12 @@ export default function PlayView({
     );
     return () => {
       navigator.geolocation.clearWatch(id);
-      if (!ended.current) void flushDistance();
+      if (!ended.current) {
+        commitSegment(Date.now()); // kirjaa keskeneräinen ikkuna ennen flushia
+        void flushDistance();
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onPosition, flushDistance]);
 
   // --- Kohteen valinta (500m-logiikka + lukitus) ---
@@ -277,6 +323,7 @@ export default function PlayView({
   // --- Session lopetus: km-pisteet + yhteenveto ---
   async function endSession() {
     ended.current = true;
+    commitSegment(Date.now()); // kirjaa viimeinen keskeneräinen ikkuna
     const walkXp = walkXpFrom(accWalk.current);
     const cycleXp = cycleXpFrom(accCycle.current);
     const distXp = walkXp + cycleXp;
