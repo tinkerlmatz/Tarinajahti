@@ -104,6 +104,7 @@ export default function PlayView({
   const navigateAfterLevelUp = useRef(false);
 
   // Kirjaa kumuloitunut ikkuna keskinopeuden perusteella kävelyyn/pyöräilyyn.
+  // Pyöräily vaatii hystereesin: kaksi peräkkäistä pyöräilykaistan ikkunaa.
   function commitSegment(now: number) {
     const start = segAnchorT.current;
     if (start === null || segDist.current <= 0) {
@@ -111,14 +112,53 @@ export default function PlayView({
       return;
     }
     const windowMs = now - start;
-    if (windowMs >= MIN_WINDOW_MS) {
-      const avgKmh = (segDist.current / (windowMs / 1000)) * 3.6;
-      if (avgKmh <= WALK_MAX_KMH) accWalk.current += segDist.current;
-      else if (avgKmh <= CYCLE_MAX_KMH) accCycle.current += segDist.current;
-      // yli CYCLE_MAX_KMH → ajoneuvo, ei kirjata
-      segDist.current = 0;
-      segAnchorT.current = now;
+    if (windowMs < MIN_WINDOW_MS) return; // liian lyhyt ikkuna, odota lisää
+
+    const dist = segDist.current;
+    const avgKmh = (dist / (windowMs / 1000)) * 3.6;
+    segDist.current = 0;
+    segAnchorT.current = now;
+
+    if (avgKmh <= WALK_MAX_KMH) {
+      // Kävely. Edeltävä yksittäinen pyöräilykaistan ikkuna oli jitteriä → kävelyksi.
+      if (pendingCycleDist.current > 0) {
+        accWalk.current += pendingCycleDist.current;
+        pendingCycleDist.current = 0;
+      }
+      accWalk.current += dist;
+      cyclingConfirmed.current = false;
+    } else if (avgKmh <= CYCLE_MAX_KMH) {
+      // Pyöräilykaista.
+      if (cyclingConfirmed.current) {
+        accCycle.current += dist; // jo vahvistettu pyöräily
+      } else if (pendingCycleDist.current > 0) {
+        // Toinen peräkkäinen → vahvista (myös edellinen takautuvasti pyöräilyksi).
+        accCycle.current += pendingCycleDist.current + dist;
+        pendingCycleDist.current = 0;
+        cyclingConfirmed.current = true;
+      } else {
+        // Ensimmäinen pyöräilykaistan ikkuna → odota vahvistusta.
+        pendingCycleDist.current = dist;
+      }
+    } else {
+      // Ajoneuvonopeus → ei kirjata. Katkaisee pyöräilyn; odottava ikkuna kävelyksi.
+      if (pendingCycleDist.current > 0) {
+        accWalk.current += pendingCycleDist.current;
+        pendingCycleDist.current = 0;
+      }
+      cyclingConfirmed.current = false;
     }
+  }
+
+  // Sulje session matkat: kirjaa keskeneräinen ikkuna ja ratkaise vahvistamaton
+  // odottava ikkuna (yksittäinen → kävelyksi, koska pyöräily ei kestänyt).
+  function finalizeSegments(now: number) {
+    commitSegment(now);
+    if (pendingCycleDist.current > 0) {
+      accWalk.current += pendingCycleDist.current;
+      pendingCycleDist.current = 0;
+    }
+    cyclingConfirmed.current = false;
   }
 
   function maybeLevelUp(before: number, after: number) {
@@ -136,6 +176,10 @@ export default function PlayView({
   // Luokitteluikkuna: kumuloitu matka + ikkunan alkuhetki.
   const segDist = useRef(0);
   const segAnchorT = useRef<number | null>(null);
+  // Hystereesi: pyöräilyä kirjataan vasta kun korkeampi nopeus kestää väh. kaksi
+  // peräkkäistä ikkunaa. Yksittäinen jitter-piikki kävelyn keskellä → kävelyksi.
+  const pendingCycleDist = useRef(0); // odottaa vahvistusta (yksi pyöräilykaistan ikkuna)
+  const cyclingConfirmed = useRef(false); // ollaanko vahvistetussa pyöräilytilassa
   const accWalk = useRef(0);
   const accCycle = useRef(0);
   const accXp = useRef(0); // session aikana löydettyjen tarinoiden XP
@@ -283,7 +327,7 @@ export default function PlayView({
     return () => {
       navigator.geolocation.clearWatch(id);
       if (!ended.current) {
-        commitSegment(Date.now()); // kirjaa keskeneräinen ikkuna ennen flushia
+        finalizeSegments(Date.now()); // kirjaa keskeneräinen + odottava ikkuna
         void flushDistance();
       }
     };
@@ -323,7 +367,7 @@ export default function PlayView({
   // --- Session lopetus: km-pisteet + yhteenveto ---
   async function endSession() {
     ended.current = true;
-    commitSegment(Date.now()); // kirjaa viimeinen keskeneräinen ikkuna
+    finalizeSegments(Date.now()); // kirjaa keskeneräinen + ratkaise odottava ikkuna
     const walkXp = walkXpFrom(accWalk.current);
     const cycleXp = cycleXpFrom(accCycle.current);
     const distXp = walkXp + cycleXp;
