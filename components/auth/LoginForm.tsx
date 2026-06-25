@@ -180,11 +180,11 @@ export default function LoginForm({
               required
               className={`field ${birthYear ? "" : "text-cream/40"}`}
             >
-              <option value="" disabled>
+              <option value="" disabled className="bg-night text-cream/50">
                 Syntymävuosi
               </option>
               {BIRTH_YEARS.map((y) => (
-                <option key={y} value={y}>
+                <option key={y} value={y} className="bg-night text-cream">
                   {y}
                 </option>
               ))}
@@ -195,11 +195,11 @@ export default function LoginForm({
               required
               className={`field ${gender ? "" : "text-cream/40"}`}
             >
-              <option value="" disabled>
+              <option value="" disabled className="bg-night text-cream/50">
                 Sukupuoli
               </option>
               {GENDER_OPTIONS.map((g) => (
-                <option key={g.value} value={g.value}>
+                <option key={g.value} value={g.value} className="bg-night text-cream">
                   {g.label}
                 </option>
               ))}
