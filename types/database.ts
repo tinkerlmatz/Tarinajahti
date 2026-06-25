@@ -2,6 +2,8 @@ export type StoryCategory = "historia" | "legenda" | "muisto";
 
 export type SuggestionStatus = "pending" | "approved" | "rejected";
 
+export type Gender = "mies" | "nainen" | "muu" | "ei_kerro";
+
 // HUOM: nämä on määriteltävä `type`-aliaksina, EI `interface`-muodossa.
 // Interface ei ole yhteensopiva Record<string, unknown>:n kanssa (ei implisiittistä
 // index-signaturea), jolloin supabase-js:n GenericSchema-rajoite ei täyty ja
@@ -62,6 +64,8 @@ export type Profile = {
   distance_cycled_meters: number;
   tutorial_seen: boolean;
   is_admin: boolean;
+  birth_year: number | null;
+  gender: Gender | null;
   created_at: string;
 };
 
@@ -160,6 +164,8 @@ export type ProfileInsert = {
   distance_cycled_meters?: number;
   tutorial_seen?: boolean;
   is_admin?: boolean;
+  birth_year?: number | null;
+  gender?: Gender | null;
   created_at?: string;
 };
 

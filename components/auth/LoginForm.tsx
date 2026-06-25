@@ -3,8 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import type { Gender } from "@/types/database";
 
 type Mode = "signin" | "signup";
+
+// Syntymävuosivalikon vaihtoehdot: nykyvuodesta taaksepäin.
+const CURRENT_YEAR = new Date().getFullYear();
+const BIRTH_YEARS = Array.from(
+  { length: CURRENT_YEAR - 1920 + 1 },
+  (_, i) => CURRENT_YEAR - i
+);
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: "mies", label: "Mies" },
+  { value: "nainen", label: "Nainen" },
+  { value: "muu", label: "Muu" },
+  { value: "ei_kerro", label: "En halua kertoa" },
+];
 
 export default function LoginForm({
   initialMode = "signin",
@@ -18,6 +33,8 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [gender, setGender] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +44,12 @@ export default function LoginForm({
     setInfo(null);
   }
 
-  async function ensureProfile(userId: string, name: string) {
+  async function ensureProfile(
+    userId: string,
+    name: string,
+    birthYearValue: number,
+    genderValue: Gender
+  ) {
     await supabase.from("profiles").upsert(
       {
         id: userId,
@@ -36,6 +58,8 @@ export default function LoginForm({
         distance_walked_meters: 0,
         distance_cycled_meters: 0,
         tutorial_seen: false,
+        birth_year: birthYearValue,
+        gender: genderValue,
       },
       { onConflict: "id", ignoreDuplicates: true }
     );
@@ -73,6 +97,18 @@ export default function LoginForm({
         return;
       }
 
+      const year = Number(birthYear);
+      if (!year) {
+        setError("Valitse syntymävuosi.");
+        setLoading(false);
+        return;
+      }
+      if (!gender) {
+        setError("Valitse sukupuoli.");
+        setLoading(false);
+        return;
+      }
+
       // Onko nimimerkki jo käytössä?
       const { data: taken } = await supabase
         .from("profiles")
@@ -93,7 +129,7 @@ export default function LoginForm({
       }
       if (data.session && data.user) {
         // Sähköpostivahvistus pois päältä → suora kirjautuminen
-        await ensureProfile(data.user.id, name);
+        await ensureProfile(data.user.id, name, year, gender as Gender);
         router.push("/");
         router.refresh();
       } else {
@@ -127,16 +163,48 @@ export default function LoginForm({
           className="field"
         />
         {mode === "signup" && (
-          <input
-            type="text"
-            placeholder="Nimimerkki"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            minLength={3}
-            maxLength={20}
-            className="field"
-          />
+          <>
+            <input
+              type="text"
+              placeholder="Nimimerkki"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              minLength={3}
+              maxLength={20}
+              className="field"
+            />
+            <select
+              value={birthYear}
+              onChange={(e) => setBirthYear(e.target.value)}
+              required
+              className={`field ${birthYear ? "" : "text-cream/40"}`}
+            >
+              <option value="" disabled>
+                Syntymävuosi
+              </option>
+              {BIRTH_YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              required
+              className={`field ${gender ? "" : "text-cream/40"}`}
+            >
+              <option value="" disabled>
+                Sukupuoli
+              </option>
+              {GENDER_OPTIONS.map((g) => (
+                <option key={g.value} value={g.value}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </>
         )}
       </div>
 
