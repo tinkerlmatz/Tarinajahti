@@ -17,68 +17,80 @@ export default function MapModal({
   onClose: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<import("leaflet").Map | null>(null);
+  const markerRef = useRef<import("leaflet").CircleMarker | null>(null);
+  const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  // Uusin pelaajasijainti init-efektin alkukeskitystä varten (ilman dep:iä).
+  const playerPosRef = useRef(playerPos);
+  playerPosRef.current = playerPos;
   const [error, setError] = useState<string | null>(null);
 
+  // --- Kartan alustus: AINOASTAAN kerran (boundary ei muutu session aikana).
+  // playerPos EI ole riippuvuutena → kartta ei rakennu uudelleen GPS-päivityksistä.
   useEffect(() => {
-    let map: import("leaflet").Map | null = null;
     let cancelled = false;
 
     (async () => {
       try {
-      const L = (await import("leaflet")).default;
-      if (cancelled || !containerRef.current) return;
+        const L = (await import("leaflet")).default;
+        if (cancelled || !containerRef.current) return;
+        leafletRef.current = L;
 
-      // Korjaa Leafletin oletusmarkkeri-ikonit (bundler ei löydä niitä muuten).
-      delete (
-        L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown }
-      )._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-        iconUrl: "/leaflet/marker-icon.png",
-        shadowUrl: "/leaflet/marker-shadow.png",
-      });
+        // Korjaa Leafletin oletusmarkkeri-ikonit (bundler ei löydä niitä muuten).
+        delete (
+          L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown }
+        )._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+          iconUrl: "/leaflet/marker-icon.png",
+          shadowUrl: "/leaflet/marker-shadow.png",
+        });
 
-      map = L.map(containerRef.current, { attributionControl: true });
-      // Aseta oletusnäkymä heti, jotta kartalla on koko/zoom ennen fitBounds.
-      map.setView([65.0, 25.54], 12);
+        const map = L.map(containerRef.current, { attributionControl: true });
+        mapRef.current = map;
+        // Aseta oletusnäkymä heti, jotta kartalla on koko/zoom ennen fitBounds.
+        map.setView([65.0, 25.54], 12);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap",
-      }).addTo(map);
-
-      let bounds: import("leaflet").LatLngBounds | null = null;
-
-      if (boundary) {
-        const layer = L.geoJSON(boundary as GeoJSON.GeoJsonObject, {
-          style: {
-            color: "#1E3A5F",
-            weight: 3,
-            fillColor: "#1E3A5F",
-            fillOpacity: 0.12,
-          },
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "© OpenStreetMap",
         }).addTo(map);
-        bounds = layer.getBounds();
-      }
 
-      if (playerPos) {
-        const marker = L.circleMarker([playerPos.lat, playerPos.lng], {
-          radius: 8,
-          color: "#0D1B2A",
-          weight: 2,
-          fillColor: "#F4B942",
-          fillOpacity: 1,
-        }).addTo(map);
-        marker.bindPopup("Sinä olet tässä");
-      }
+        let bounds: import("leaflet").LatLngBounds | null = null;
 
-      // Varmista oikea koko ennen rajaukseen sovittamista.
-      map.invalidateSize();
-      if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20] });
-      } else if (playerPos) {
-        map.setView([playerPos.lat, playerPos.lng], 15);
-      }
+        if (boundary) {
+          const layer = L.geoJSON(boundary as GeoJSON.GeoJsonObject, {
+            style: {
+              color: "#1E3A5F",
+              weight: 3,
+              fillColor: "#1E3A5F",
+              fillOpacity: 0.12,
+            },
+          }).addTo(map);
+          bounds = layer.getBounds();
+        }
+
+        // Varmista oikea koko ennen rajaukseen sovittamista.
+        map.invalidateSize();
+        const pp = playerPosRef.current;
+        if (bounds && bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [20, 20] });
+        } else if (pp) {
+          map.setView([pp.lat, pp.lng], 15);
+        }
+
+        // Pelaajamerkki (jos sijainti jo tiedossa). Päivitykset hoitaa toinen efekti.
+        if (pp) {
+          const marker = L.circleMarker([pp.lat, pp.lng], {
+            radius: 8,
+            color: "#0D1B2A",
+            weight: 2,
+            fillColor: "#F4B942",
+            fillOpacity: 1,
+          }).addTo(map);
+          marker.bindPopup("Sinä olet tässä");
+          markerRef.current = marker;
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : String(e));
@@ -88,9 +100,35 @@ export default function MapModal({
 
     return () => {
       cancelled = true;
-      if (map) map.remove();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      markerRef.current = null;
     };
-  }, [boundary, playerPos]);
+  }, [boundary]);
+
+  // --- Pelaajamerkin päivitys: siirrä olemassa olevaa markeria (ei karttaa
+  // uudelleen). Luo merkki jos kartta ehti valmistua ennen ensimmäistä sijaintia.
+  useEffect(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L || !playerPos) return;
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng([playerPos.lat, playerPos.lng]);
+    } else {
+      const marker = L.circleMarker([playerPos.lat, playerPos.lng], {
+        radius: 8,
+        color: "#0D1B2A",
+        weight: 2,
+        fillColor: "#F4B942",
+        fillOpacity: 1,
+      }).addTo(map);
+      marker.bindPopup("Sinä olet tässä");
+      markerRef.current = marker;
+    }
+  }, [playerPos]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-night/95 backdrop-blur-sm">
