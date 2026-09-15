@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { usernameToEmail, usernameKey } from "@/lib/username";
 import type { Gender } from "@/types/database";
 
 type Mode = "signin" | "signup";
@@ -30,7 +31,6 @@ export default function LoginForm({
   const supabase = createClient();
 
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [birthYear, setBirthYear] = useState("");
@@ -71,8 +71,8 @@ export default function LoginForm({
     setLoading(true);
 
     if (mode === "signin") {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+      const { error } = await supabase.auth.signInWithPassword({
+        email: usernameToEmail(username),
         password,
       });
       if (error) {
@@ -96,6 +96,12 @@ export default function LoginForm({
         setLoading(false);
         return;
       }
+      // Avaimen on sisällettävä kirjaimia/numeroita (ei pelkkiä väli-/erikoismerkkejä).
+      if (usernameKey(name).length === 0) {
+        setError("Valitse nimimerkki jossa on kirjaimia tai numeroita.");
+        setLoading(false);
+        return;
+      }
 
       const year = Number(birthYear);
       if (!year) {
@@ -109,7 +115,7 @@ export default function LoginForm({
         return;
       }
 
-      // Onko nimimerkki jo käytössä?
+      // Onko näyttönimi jo käytössä?
       const { data: taken } = await supabase
         .from("profiles")
         .select("id")
@@ -121,19 +127,23 @@ export default function LoginForm({
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email: usernameToEmail(name),
+        password,
+      });
       if (error) {
         setError(suomeksi(error.message));
         setLoading(false);
         return;
       }
       if (data.session && data.user) {
-        // Sähköpostivahvistus pois päältä → suora kirjautuminen
         await ensureProfile(data.user.id, name, year, gender as Gender);
         router.push("/");
         router.refresh();
       } else {
-        setInfo("Tarkista sähköpostisi ja vahvista tilisi linkistä.");
+        // Ei sessiota (esim. jos vahvistus olisi päällä) → ohjaa kirjautumaan.
+        setInfo("Tili luotu. Kirjaudu sisään nimimerkilläsi ja salasanallasi.");
+        setMode("signin");
         setLoading(false);
       }
     }
@@ -143,13 +153,14 @@ export default function LoginForm({
     <form onSubmit={handleSubmit} className="w-full space-y-4">
       <div className="space-y-3">
         <input
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="Sähköposti"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          autoComplete="username"
+          placeholder="Nimimerkki"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           required
+          minLength={3}
+          maxLength={20}
           className="field"
         />
         <input
@@ -164,16 +175,6 @@ export default function LoginForm({
         />
         {mode === "signup" && (
           <>
-            <input
-              type="text"
-              placeholder="Nimimerkki"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              minLength={3}
-              maxLength={20}
-              className="field"
-            />
             <select
               value={birthYear}
               onChange={(e) => setBirthYear(e.target.value)}
@@ -242,9 +243,9 @@ export default function LoginForm({
 // Käännetään yleisimmät Supabase-virheet suomeksi
 function suomeksi(msg: string): string {
   if (msg.includes("Invalid login credentials"))
-    return "Väärä sähköposti tai salasana.";
+    return "Väärä nimimerkki tai salasana.";
   if (msg.includes("already registered"))
-    return "Tili tällä sähköpostilla on jo olemassa.";
+    return "Nimimerkki on jo käytössä";
   if (msg.includes("Password should be"))
     return "Salasanan tulee olla vähintään 6 merkkiä.";
   return msg;
