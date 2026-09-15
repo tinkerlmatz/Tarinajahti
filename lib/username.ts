@@ -2,7 +2,8 @@
 // Näyttönimi (profiles.username) säilyy alkuperäisenä ääkkösineen; tämä tuottaa
 // vain ascii-avaimen jolla kirjautuminen tapahtuu.
 
-const EMAIL_DOMAIN = "tarinajahti.local";
+// HUOM: käytä kelvollista TLD:tä — Supabase hylkää esim. ".local".
+const EMAIL_DOMAIN = "tarinajahti.fi";
 
 /** Nimimerkki → ascii-avain: pienet kirjaimet, diakriitit pois, vain a-z0-9_-. */
 export function usernameKey(username: string): string {
