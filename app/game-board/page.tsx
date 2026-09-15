@@ -160,6 +160,11 @@ export default async function GameBoardPage() {
                       </span>
                     </p>
                   )}
+                  {board.loot_description && (
+                    <p className="text-xs leading-relaxed text-cream/70">
+                      {board.loot_description}
+                    </p>
+                  )}
                 </div>
                 <Link
                   href={`/play/${board.id}`}
