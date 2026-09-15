@@ -30,13 +30,7 @@ const CATEGORIES: {
     defaultXp: 10,
     info: "Paikallinen tarina jonka todenperäisyys on epäselvä. Kaupunkihuhu, myyttinen tarina tai epävirallinen perimätieto.",
   },
-  {
-    value: "muisto",
-    label: "Muisto",
-    icon: "⏳",
-    defaultXp: 5,
-    info: "Merkittävä henkilökohtainen muisto joka liittyy juuri tähän paikkaan. Muiston tulee olla erityinen — ei arkipäiväinen kokemus vaan jotain ainutlaatuista: kosinta, lapsuuden tärkeä hetki, perheen perinne tms. Tavalliset arjen hetket eivät sovi tähän kategoriaan.",
-  },
+  // "Muisto" piilotettu pilotista.
 ];
 
 const MapPicker = dynamic(() => import("@/components/suggest/MapPicker"), {
@@ -181,12 +175,14 @@ export default function SuggestStoryForm({
   return (
     <form onSubmit={submit} className="space-y-5">
       <p className="text-sm leading-relaxed text-cream/70">
-        Tiedätkö kiinnostavan paikan tai tarinan? Ehdota sitä mukaan
-        Tarinajahtiin! Hyväksytystä ehdotuksesta saat XP-bonuksen.
+        Tiedätkö kiinnostavan, historiallisen paikan tai paikallisen legendan?
+        Ehdota sitä mukaan Tarinajahtiin! Hyväksytystä ehdotuksesta saat
+        XP-bonuksen.
         <br />
         <br />
         Tarinapisteen tulee sijaita yleisellä alueella — ei pihoilla,
-        yksityisalueilla tai muuten rajatuilla paikoilla.
+        yksityisalueilla, vilkkaasti liikennöidyillä alueilla tai muuten
+        rajatuilla paikoilla.
       </p>
 
       {/* Valitse alue */}
