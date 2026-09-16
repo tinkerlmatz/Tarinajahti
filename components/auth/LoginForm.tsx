@@ -136,6 +136,13 @@ export default function LoginForm({
         setLoading(false);
         return;
       }
+      // Supabase palauttaa olemassa olevalle tilille näennäisen onnistumisen,
+      // jossa identities on tyhjä → tulkitaan nimimerkki varatuksi.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError("Nimimerkki on jo käytössä");
+        setLoading(false);
+        return;
+      }
       if (data.session && data.user) {
         await ensureProfile(data.user.id, name, year, gender as Gender);
         router.push("/");
