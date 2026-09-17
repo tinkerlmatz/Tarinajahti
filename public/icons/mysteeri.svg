@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -12 124 124" width="160" height="160">
+  <style>
+    .ring{transform-box:fill-box;transform-origin:center;animation:mRing 2s ease-out infinite}
+    @keyframes mRing{0%{transform:scale(.6);opacity:0}40%{opacity:.9}100%{transform:scale(1.18);opacity:0}}
+    .spk{transform-box:fill-box;transform-origin:center;animation:mSpk 1.4s ease-in-out infinite}
+    @keyframes mSpk{0%,100%{opacity:.2;transform:scale(.5)}50%{opacity:1;transform:scale(1)}}
+    .icon{transform-box:fill-box;transform-origin:center;animation:mIcon .7s cubic-bezier(.2,.8,.2,1) both}
+    @keyframes mIcon{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+    .flash{transform-box:fill-box;transform-origin:center;animation:mFlash 1.6s ease-out infinite}
+    @keyframes mFlash{0%{opacity:.7;transform:scale(.5)}45%{opacity:.35}75%{opacity:0;transform:scale(1.6)}100%{opacity:0}}
+    .glow{transform-box:fill-box;transform-origin:center;animation:mGlow 1.8s ease-in-out infinite}
+    @keyframes mGlow{0%,100%{opacity:.5;transform:scale(.94)}50%{opacity:1;transform:scale(1)}}
+  </style>
+  <circle class="ring" cx="50" cy="48" r="36" fill="none" stroke="#F4B942" stroke-width="2"></circle>
+  <rect class="spk" x="22" y="6" width="9" height="9" fill="#F4B942" style="animation-delay:0s"></rect>
+  <rect class="spk" x="76" y="16" width="7" height="7" fill="#ffd479" style="animation-delay:.13s"></rect>
+  <rect class="spk" x="14" y="74" width="8" height="8" fill="#F4B942" style="animation-delay:.26s"></rect>
+  <rect class="spk" x="80" y="78" width="6" height="6" fill="#ffd479" style="animation-delay:.38s"></rect>
+  <g class="icon">
+    <circle class="flash" cx="50" cy="46" r="20" fill="#fff"></circle>
+    <!-- Jalusta -->
+    <rect x="34" y="78" width="32" height="7" rx="3.5" fill="#F4B942"></rect>
+    <path d="M40 72 L60 72 L57 79 L43 79 Z" fill="#d99a2b"></path>
+    <!-- Kristallipallo -->
+    <circle cx="50" cy="46" r="24" fill="#1E3A5F"></circle>
+    <circle cx="50" cy="46" r="24" fill="none" stroke="#F4B942" stroke-width="3"></circle>
+    <ellipse cx="42" cy="38" rx="7" ry="5" fill="#fff" opacity=".25"></ellipse>
+    <!-- Kysymysmerkki (mystinen hehku) -->
+    <g class="glow">
+      <path d="M41 40 a9 9 0 1 1 15 6.5 q-6 4 -6 9.5" fill="none" stroke="#ffd479" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+      <circle cx="50" cy="60" r="3.6" fill="#ffd479"></circle>
+    </g>
+  </g>
+</svg>

@@ -4,11 +4,12 @@ import { useEffect } from "react";
 import { playFanfare } from "@/lib/sound";
 import type { StoryCategory } from "@/types/database";
 
-// Record<string, ...> koska uudet luokat (esim. mysteeri) käyttävät fallbackia.
+// Record<string, ...>: tuntematon luokka putoaa historia-fallbackiin.
 const ICON_SRC: Record<string, string> = {
   historia: "/icons/historia.svg",
   legenda: "/icons/legenda.svg",
   muisto: "/icons/muisto.svg",
+  mysteeri: "/icons/mysteeri.svg",
 };
 
 export default function DiscoveryAnimation({
