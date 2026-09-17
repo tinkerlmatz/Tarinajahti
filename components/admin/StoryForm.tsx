@@ -83,36 +83,71 @@ const AGES: { value: number; label: string }[] = [
 
 type LatLng = { lat: number; lng: number };
 
+// Esitäyttö ehdotuksesta (hyväksyntä avaa lomakkeen näillä arvoilla).
+export type StoryPrefill = {
+  board_id?: string;
+  category?: StoryCategory;
+  title?: string;
+  content?: string;
+  xp_reward?: number;
+  lat?: number;
+  lng?: number;
+  image_url?: string | null;
+  video_url?: string | null;
+  external_link?: string | null;
+};
+
 export default function StoryForm({
   boards,
   story,
+  prefill,
   userId,
+  afterSave,
   onDone,
   onCancel,
 }: {
   boards: GameBoard[];
   story?: Story;
+  prefill?: StoryPrefill;
   userId: string;
+  // Ajetaan onnistuneen tallennuksen jälkeen (esim. merkitse ehdotus
+  // hyväksytyksi + anna XP-bonus). Virhe tässä ei estä tarinan luontia.
+  afterSave?: () => Promise<void> | void;
   onDone: () => void;
   onCancel: () => void;
 }) {
   const supabase = createClient();
 
-  const [boardId, setBoardId] = useState(story?.board_id ?? boards[0]?.id ?? "");
-  const [category, setCategory] = useState<StoryCategory>(
-    story?.category ?? "historia"
+  // Olemassa oleva kuva: muokkauksessa tarinasta, hyväksynnässä ehdotuksesta.
+  const existingImage = story?.image_url ?? prefill?.image_url ?? null;
+
+  const [boardId, setBoardId] = useState(
+    story?.board_id ?? prefill?.board_id ?? boards[0]?.id ?? ""
   );
-  const [title, setTitle] = useState(story?.title ?? "");
-  const [content, setContent] = useState(story?.content ?? "");
-  const [xp, setXp] = useState(story?.xp_reward ?? 25);
+  const [category, setCategory] = useState<StoryCategory>(
+    story?.category ?? prefill?.category ?? "historia"
+  );
+  const [title, setTitle] = useState(story?.title ?? prefill?.title ?? "");
+  const [content, setContent] = useState(
+    story?.content ?? prefill?.content ?? ""
+  );
+  const [xp, setXp] = useState(story?.xp_reward ?? prefill?.xp_reward ?? 25);
   const [radius, setRadius] = useState(story?.discovery_radius_meters ?? 15);
-  const [videoUrl, setVideoUrl] = useState(story?.video_url ?? "");
-  const [externalLink, setExternalLink] = useState(story?.external_link ?? "");
+  const [videoUrl, setVideoUrl] = useState(
+    story?.video_url ?? prefill?.video_url ?? ""
+  );
+  const [externalLink, setExternalLink] = useState(
+    story?.external_link ?? prefill?.external_link ?? ""
+  );
   const [teaser, setTeaser] = useState(story?.teaser ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
   const [pos, setPos] = useState<LatLng | null>(
-    story ? { lat: story.lat, lng: story.lng } : null
+    story
+      ? { lat: story.lat, lng: story.lng }
+      : prefill?.lat != null && prefill?.lng != null
+      ? { lat: prefill.lat, lng: prefill.lng }
+      : null
   );
 
   // --- Rikastuskentät ---
@@ -159,7 +194,7 @@ export default function StoryForm({
 
     setSaving(true);
 
-    let imageUrl = story?.image_url ?? null;
+    let imageUrl = existingImage;
     if (removeImage) imageUrl = null;
     if (file) {
       const ext = file.name.split(".").pop() ?? "jpg";
@@ -204,18 +239,25 @@ export default function StoryForm({
           .from("stories")
           .insert({ ...payload, created_by: userId });
 
-    setSaving(false);
     if (dbErr) {
+      setSaving(false);
       setError("Tallennus epäonnistui.");
       return;
     }
+    // Viimeistely (esim. ehdotuksen hyväksyntä + bonus) tallennuksen jälkeen.
+    if (afterSave) await afterSave();
+    setSaving(false);
     onDone();
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
       <h3 className="text-lg font-bold text-gold">
-        {story ? "Muokkaa tarinaa" : "Lisää uusi tarina"}
+        {story
+          ? "Muokkaa tarinaa"
+          : prefill
+          ? "Hyväksy ja rikasta ehdotus"
+          : "Lisää uusi tarina"}
       </h3>
 
       <Field label="Alue">
@@ -286,11 +328,11 @@ export default function StoryForm({
       </div>
 
       <Field label="Kuva (valinnainen)">
-        {story?.image_url && !removeImage && !file ? (
+        {existingImage && !removeImage && !file ? (
           <div className="mb-2 flex items-start gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={story.image_url}
+              src={existingImage}
               alt=""
               className="max-h-[120px] max-w-[120px] rounded-lg object-cover"
             />
@@ -479,7 +521,11 @@ export default function StoryForm({
 
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className="btn-gold flex-1">
-          {saving ? "Tallennetaan…" : "Tallenna"}
+          {saving
+            ? "Tallennetaan…"
+            : prefill
+            ? "Hyväksy ja tallenna"
+            : "Tallenna"}
         </button>
         <button
           type="button"

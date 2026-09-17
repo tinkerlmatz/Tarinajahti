@@ -48,6 +48,7 @@ export default function AdminPanel({
   const [adding, setAdding] = useState(false);
   const [editingSuggestion, setEditingSuggestion] =
     useState<SuggestionWithName | null>(null);
+  const [approving, setApproving] = useState<SuggestionWithName | null>(null);
   const [creatingBoard, setCreatingBoard] = useState<{
     name?: string;
     city?: string;
@@ -59,6 +60,7 @@ export default function AdminPanel({
     setEditing(null);
     setAdding(false);
     setEditingSuggestion(null);
+    setApproving(null);
     setCreatingBoard(null);
     router.refresh();
   }
@@ -71,30 +73,14 @@ export default function AdminPanel({
     router.refresh();
   }
 
-  async function approve(s: SuggestionWithName) {
-    setBusy(s.id);
+  // Hyväksynnän viimeistely: ajetaan kun StoryForm on luonut tarinan.
+  // Merkitsee ehdotuksen hyväksytyksi ja antaa ehdottajalle XP-bonuksen.
+  async function finalizeApproval(s: SuggestionWithName) {
     const bonus = BONUS_BY_CATEGORY[s.category] ?? 5;
-    // 1) Luo tarina ehdotuksesta. Tarinan oma xp_reward = kategorian oletus
-    //    (admin voi muokata sitä jälkikäteen tarinan muokkauslomakkeesta).
-    await supabase.from("stories").insert({
-      board_id: s.board_id,
-      category: s.category,
-      title: s.title,
-      content: s.description,
-      lat: s.lat,
-      lng: s.lng,
-      xp_reward: bonus,
-      discovery_radius_meters: s.discovery_radius_meters ?? 15,
-      image_url: s.image_urls?.[0] ?? s.image_url ?? null,
-      video_url: s.video_urls?.[0] ?? s.video_url ?? null,
-      created_by: s.suggested_by,
-    });
-    // 2) Merkitse hyväksytyksi.
     await supabase
       .from("story_suggestions")
       .update({ status: "approved", xp_bonus_given: true })
       .eq("id", s.id);
-    // 3) XP-bonus ehdottajalle.
     const { data: prof } = await supabase
       .from("profiles")
       .select("total_xp")
@@ -106,8 +92,6 @@ export default function AdminPanel({
         .update({ total_xp: (prof.total_xp ?? 0) + bonus })
         .eq("id", s.suggested_by);
     }
-    setBusy(null);
-    router.refresh();
   }
 
   async function reject(id: string) {
@@ -131,6 +115,29 @@ export default function AdminPanel({
           setEditing(null);
           setAdding(false);
         }}
+      />
+    );
+  }
+
+  if (approving) {
+    return (
+      <StoryForm
+        boards={boards}
+        userId={userId}
+        prefill={{
+          board_id: approving.board_id,
+          category: approving.category,
+          title: approving.title,
+          content: approving.description,
+          xp_reward: BONUS_BY_CATEGORY[approving.category] ?? 15,
+          lat: approving.lat,
+          lng: approving.lng,
+          image_url: approving.image_urls?.[0] ?? approving.image_url ?? null,
+          video_url: approving.video_urls?.[0] ?? approving.video_url ?? null,
+        }}
+        afterSave={() => finalizeApproval(approving)}
+        onDone={refresh}
+        onCancel={() => setApproving(null)}
       />
     );
   }
@@ -278,7 +285,7 @@ export default function AdminPanel({
 
                   <div className="mt-3 flex gap-2">
                     <button
-                      onClick={() => approve(s)}
+                      onClick={() => setApproving(s)}
                       disabled={busy === s.id}
                       className="flex-1 rounded-lg bg-gold py-2 text-sm font-bold text-night hover:bg-gold-light disabled:opacity-50"
                     >
