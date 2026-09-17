@@ -1,4 +1,21 @@
-export type StoryCategory = "historia" | "legenda" | "muisto";
+export type StoryCategory = "historia" | "legenda" | "muisto" | "mysteeri";
+
+// Kohdetyyppi ja lähdepohja: kontrolloidut arvot (slugit). Näyttönimet UI:ssa.
+export type StoryObjectType =
+  | "paikka"
+  | "rakennus"
+  | "henkilo"
+  | "tapahtuma"
+  | "luontokohde"
+  | "reitti"
+  | "yhteiso";
+
+export type SourceBasis =
+  | "dokumentoitu"
+  | "muistitieto"
+  | "perimatieto"
+  | "tulkinta"
+  | "huhu";
 
 export type SuggestionStatus = "pending" | "approved" | "rejected";
 
@@ -51,6 +68,14 @@ export type Story = {
   video_url: string | null;
   teaser: string | null;
   tags: string[] | null;
+  // Rikas luokittelu (admin-rikastus; kaikki valinnaisia/oletuksin).
+  object_type: StoryObjectType | null;
+  themes: string[];
+  year_start: number | null;
+  year_end: number | null;
+  min_age: number;
+  moods: string[];
+  source_basis: SourceBasis | null;
   created_by: string | null;
   created_at: string;
 };
@@ -152,6 +177,13 @@ export type StoryInsert = {
   video_url?: string | null;
   teaser?: string | null;
   tags?: string[] | null;
+  object_type?: StoryObjectType | null;
+  themes?: string[];
+  year_start?: number | null;
+  year_end?: number | null;
+  min_age?: number;
+  moods?: string[];
+  source_basis?: SourceBasis | null;
   created_by?: string | null;
   created_at?: string;
 };

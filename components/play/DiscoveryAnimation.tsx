@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { playFanfare } from "@/lib/sound";
 import type { StoryCategory } from "@/types/database";
 
-const ICON_SRC: Record<StoryCategory, string> = {
+// Record<string, ...> koska uudet luokat (esim. mysteeri) käyttävät fallbackia.
+const ICON_SRC: Record<string, string> = {
   historia: "/icons/historia.svg",
   legenda: "/icons/legenda.svg",
   muisto: "/icons/muisto.svg",

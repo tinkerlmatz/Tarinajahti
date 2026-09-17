@@ -6,12 +6,14 @@ const CATEGORY_LABEL: Record<string, string> = {
   historia: "Historia",
   legenda: "Legenda",
   muisto: "Muisto",
+  mysteeri: "Mysteeri",
 };
 
 const CATEGORY_ICON: Record<string, string> = {
   historia: "📜",
   legenda: "⚡",
   muisto: "⏳",
+  mysteeri: "🔮",
 };
 
 export default function StoryModal({

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
-import type { GameBoard, Story, StoryCategory } from "@/types/database";
+import type {
+  GameBoard,
+  Story,
+  StoryCategory,
+  StoryObjectType,
+  SourceBasis,
+} from "@/types/database";
 
 const MapPicker = dynamic(() => import("@/components/suggest/MapPicker"), {
   ssr: false,
@@ -13,19 +19,66 @@ const CATEGORIES: { value: StoryCategory; label: string }[] = [
   { value: "historia", label: "Historia" },
   { value: "legenda", label: "Legenda" },
   { value: "muisto", label: "Muisto" },
+  { value: "mysteeri", label: "Mysteeri" },
 ];
 
-const PRESET_TAGS = [
-  "urheilu",
-  "kirjallisuus",
-  "taide",
-  "arkkitehtuuri",
-  "henkilö",
-  "luonto",
-  "teollisuus",
-  "sota",
-  "liikenne",
-  "yhteisö",
+const OBJECT_TYPES: { value: StoryObjectType; label: string }[] = [
+  { value: "paikka", label: "Paikka" },
+  { value: "rakennus", label: "Rakennus/rakennelma" },
+  { value: "henkilo", label: "Henkilö" },
+  { value: "tapahtuma", label: "Tapahtuma" },
+  { value: "luontokohde", label: "Luontokohde" },
+  { value: "reitti", label: "Reitti" },
+  { value: "yhteiso", label: "Yhteisö" },
+];
+
+// Kontrolloitu teemasanasto (slug -> näyttönimi). Vapaa teksti poistettu:
+// yhtenäiset arvot pitävät kustomoitujen pelien suodatuksen ehjänä.
+const THEMES: { value: string; label: string }[] = [
+  { value: "urheilu_liikunta", label: "Urheilu & liikunta" },
+  { value: "luonto_ymparisto", label: "Luonto & ympäristö" },
+  { value: "rakennukset_arkkitehtuuri", label: "Rakennukset & arkkitehtuuri" },
+  { value: "liikenne_kulkeminen", label: "Liikenne & kulkeminen" },
+  { value: "sota_konfliktit", label: "Sota & konfliktit" },
+  { value: "tyo_elinkeinot", label: "Työ & elinkeinot" },
+  { value: "tekniikka_infrastruktuuri", label: "Tekniikka & infrastruktuuri" },
+  { value: "koulutus", label: "Koulutus" },
+  { value: "kulttuuri", label: "Kulttuuri" },
+  { value: "musiikki", label: "Musiikki" },
+  { value: "kirjallisuus", label: "Kirjallisuus" },
+  { value: "yhteisot_yhdistykset", label: "Yhteisöt & yhdistykset" },
+  { value: "lapset_nuoret", label: "Lapset & nuoret" },
+  { value: "vapaa_aika_harrastukset", label: "Vapaa-aika & harrastukset" },
+  { value: "ruoka_juoma", label: "Ruoka & juoma" },
+  { value: "uskonto_kirkko", label: "Uskonto & kirkko" },
+  { value: "terveys_hyvinvointi", label: "Terveys & hyvinvointi" },
+  { value: "hallinto_yhteiskunta", label: "Hallinto & yhteiskunta" },
+  { value: "kauppa_palvelut", label: "Kauppa & palvelut" },
+  { value: "taide", label: "Taide" },
+];
+
+const MOODS: { value: string; label: string }[] = [
+  { value: "hauska", label: "Hauska" },
+  { value: "jannittava", label: "Jännittävä" },
+  { value: "mystinen", label: "Mystinen" },
+  { value: "koskettava", label: "Koskettava" },
+  { value: "yllattava", label: "Yllättävä" },
+  { value: "nostalginen", label: "Nostalginen" },
+];
+
+const SOURCE_BASES: { value: SourceBasis; label: string }[] = [
+  { value: "dokumentoitu", label: "Dokumentoitu" },
+  { value: "muistitieto", label: "Muistitieto" },
+  { value: "perimatieto", label: "Perimätieto" },
+  { value: "tulkinta", label: "Tulkinta" },
+  { value: "huhu", label: "Tarina/huhu" },
+];
+
+const AGES: { value: number; label: string }[] = [
+  { value: 0, label: "Kaikille" },
+  { value: 7, label: "7+" },
+  { value: 12, label: "12+" },
+  { value: 16, label: "16+" },
 ];
 
 type LatLng = { lat: number; lng: number };
@@ -56,16 +109,39 @@ export default function StoryForm({
   const [videoUrl, setVideoUrl] = useState(story?.video_url ?? "");
   const [externalLink, setExternalLink] = useState(story?.external_link ?? "");
   const [teaser, setTeaser] = useState(story?.teaser ?? "");
-  const [tags, setTags] = useState<string[]>(story?.tags ?? []);
   const [file, setFile] = useState<File | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
   const [pos, setPos] = useState<LatLng | null>(
     story ? { lat: story.lat, lng: story.lng } : null
   );
+
+  // --- Rikastuskentät ---
+  const [objectType, setObjectType] = useState<StoryObjectType | "">(
+    story?.object_type ?? ""
+  );
+  const [themes, setThemes] = useState<string[]>(story?.themes ?? []);
+  const [yearStart, setYearStart] = useState(
+    story?.year_start != null ? String(story.year_start) : ""
+  );
+  const [yearEnd, setYearEnd] = useState(
+    story?.year_end != null ? String(story.year_end) : ""
+  );
+  const [minAge, setMinAge] = useState<number>(story?.min_age ?? 0);
+  const [moods, setMoods] = useState<string[]>(story?.moods ?? []);
+  const [sourceBasis, setSourceBasis] = useState<SourceBasis | "">(
+    story?.source_basis ?? ""
+  );
+
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const boundary = boards.find((b) => b.id === boardId)?.boundary ?? null;
+
+  function toggle(list: string[], value: string): string[] {
+    return list.includes(value)
+      ? list.filter((x) => x !== value)
+      : [...list, value];
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +150,12 @@ export default function StoryForm({
     if (!title.trim()) return setError("Anna otsikko.");
     if (!content.trim()) return setError("Anna tarinateksti.");
     if (!pos) return setError("Valitse sijainti.");
+
+    const ys = yearStart.trim() === "" ? null : Number(yearStart);
+    const ye = yearEnd.trim() === "" ? null : Number(yearEnd);
+    if (ys != null && ye != null && ys > ye) {
+      return setError("Alkuvuosi ei voi olla loppuvuotta suurempi.");
+    }
 
     setSaving(true);
 
@@ -107,7 +189,13 @@ export default function StoryForm({
       video_url: videoUrl.trim() || null,
       external_link: externalLink.trim() || null,
       teaser: teaser.trim() || null,
-      tags: tags.length > 0 ? tags : null,
+      object_type: objectType || null,
+      themes,
+      year_start: ys,
+      year_end: ye,
+      min_age: minAge,
+      moods,
+      source_basis: sourceBasis || null,
     };
 
     const { error: dbErr } = story
@@ -145,20 +233,15 @@ export default function StoryForm({
       </Field>
 
       <Field label="Tarinaluokka">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {CATEGORIES.map((c) => (
-            <button
-              type="button"
+            <Chip
               key={c.value}
+              on={category === c.value}
               onClick={() => setCategory(c.value)}
-              className={`rounded-lg border py-2 text-sm font-semibold transition-colors ${
-                category === c.value
-                  ? "border-gold bg-gold/15 text-gold"
-                  : "border-white/10 bg-ocean/40 text-cream/70"
-              }`}
             >
               {c.label}
-            </button>
+            </Chip>
           ))}
         </div>
       </Field>
@@ -262,44 +345,111 @@ export default function StoryForm({
         </p>
       </Field>
 
-      <Field label="Teemat">
-        <div className="flex flex-wrap gap-2">
-          {[...PRESET_TAGS, ...tags.filter((t) => !PRESET_TAGS.includes(t))].map(
-            (t) => {
-              const on = tags.includes(t);
-              return (
-                <button
-                  type="button"
-                  key={t}
-                  onClick={() =>
-                    setTags(on ? tags.filter((x) => x !== t) : [...tags, t])
-                  }
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                    on
-                      ? "border-gold bg-gold/15 text-gold"
-                      : "border-white/10 bg-ocean/40 text-cream/70 hover:border-gold/40"
-                  }`}
-                >
-                  {t}
-                </button>
-              );
-            }
-          )}
-        </div>
-        <input
-          type="text"
-          placeholder="Lisää oma teema ja paina Enter"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              const v = e.currentTarget.value.trim().toLowerCase();
-              if (v && !tags.includes(v)) setTags([...tags, v]);
-              e.currentTarget.value = "";
-            }
-          }}
-          className="field mt-2"
-        />
-      </Field>
+      {/* --- Rikastus (suodatusta ja kustomoituja pelejä varten) --- */}
+      <div className="rounded-xl border border-white/10 bg-ocean/20 p-3 space-y-4">
+        <p className="text-xs font-bold uppercase tracking-widest text-gold/70">
+          Luokittelu &amp; rikastus
+        </p>
+
+        <Field label="Kohdetyyppi">
+          <div className="flex flex-wrap gap-2">
+            {OBJECT_TYPES.map((o) => (
+              <Chip
+                key={o.value}
+                on={objectType === o.value}
+                onClick={() =>
+                  setObjectType(objectType === o.value ? "" : o.value)
+                }
+              >
+                {o.label}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+
+        <Field label="Teemat (voit valita useita)">
+          <div className="flex flex-wrap gap-2">
+            {THEMES.map((t) => (
+              <Chip
+                key={t.value}
+                on={themes.includes(t.value)}
+                onClick={() => setThemes(toggle(themes, t.value))}
+                pill
+              >
+                {t.label}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+
+        <Field label="Ajankohta (vuosiväli, valinnainen)">
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="number"
+              value={yearStart}
+              onChange={(e) => setYearStart(e.target.value)}
+              placeholder="Alkuvuosi"
+              className="field"
+            />
+            <input
+              type="number"
+              value={yearEnd}
+              onChange={(e) => setYearEnd(e.target.value)}
+              placeholder="Loppuvuosi"
+              className="field"
+            />
+          </div>
+          <p className="mt-1 text-xs text-cream/50">
+            Esihistoria = negatiivinen vuosi. Jätä tyhjäksi jos ajankohta on
+            epämääräinen.
+          </p>
+        </Field>
+
+        <Field label="Suositusikä">
+          <div className="grid grid-cols-4 gap-2">
+            {AGES.map((a) => (
+              <Chip
+                key={a.value}
+                on={minAge === a.value}
+                onClick={() => setMinAge(a.value)}
+              >
+                {a.label}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+
+        <Field label="Tunnelma (voit valita useita)">
+          <div className="flex flex-wrap gap-2">
+            {MOODS.map((m) => (
+              <Chip
+                key={m.value}
+                on={moods.includes(m.value)}
+                onClick={() => setMoods(toggle(moods, m.value))}
+                pill
+              >
+                {m.label}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+
+        <Field label="Lähdepohja">
+          <div className="flex flex-wrap gap-2">
+            {SOURCE_BASES.map((s) => (
+              <Chip
+                key={s.value}
+                on={sourceBasis === s.value}
+                onClick={() =>
+                  setSourceBasis(sourceBasis === s.value ? "" : s.value)
+                }
+              >
+                {s.label}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+      </div>
 
       <Field label="Sijainti">
         <div className="mb-2 grid grid-cols-2 gap-2">
@@ -342,6 +492,36 @@ export default function StoryForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function Chip({
+  on,
+  onClick,
+  children,
+  pill,
+}: {
+  on: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  pill?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${
+        pill ? "rounded-full px-3 py-1 text-xs" : "rounded-lg py-2 text-sm"
+      } border font-semibold transition-colors ${
+        pill ? "" : "px-2"
+      } ${
+        on
+          ? "border-gold bg-gold/15 text-gold"
+          : "border-white/10 bg-ocean/40 text-cream/70 hover:border-gold/40"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
