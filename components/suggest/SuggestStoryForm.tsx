@@ -30,7 +30,14 @@ const CATEGORIES: {
     defaultXp: 10,
     info: "Paikallinen tarina jonka todenperäisyys on epäselvä. Kaupunkihuhu, myyttinen tarina tai epävirallinen perimätieto.",
   },
-  // "Muisto" piilotettu pilotista.
+  {
+    value: "muisto",
+    label: "Muisto",
+    icon: "⏳",
+    defaultXp: 10,
+    info: "Henkilökohtainen tai yhteisön muisto tähän paikkaan liittyen. Esim. miltä paikka oli ennen, tai tapahtuma jonka koit tai josta olet kuullut.",
+  },
+  // "Mysteeri" on admin-only (kuratorinen luokka), ei ehdotuslomakkeella.
 ];
 
 const MapPicker = dynamic(() => import("@/components/suggest/MapPicker"), {
@@ -312,10 +319,10 @@ export default function SuggestStoryForm({
         )}
       </div>
 
-      {/* Videolinkit (max 3) */}
+      {/* WWW-linkit (max 3) */}
       <div>
         <label className="mb-1 block text-sm font-semibold text-cream">
-          Videolinkit{" "}
+          WWW-linkit{" "}
           <span className="font-normal text-cream/50">
             (valinnainen, enintään {MAX_MEDIA})
           </span>
@@ -332,7 +339,7 @@ export default function SuggestStoryForm({
                   setVideoUrls(next);
                 }}
                 className="field flex-1"
-                placeholder="https://youtube.com/…"
+                placeholder="https://…"
               />
               {videoUrls.length > 1 && (
                 <button
@@ -355,7 +362,7 @@ export default function SuggestStoryForm({
             onClick={() => setVideoUrls([...videoUrls, ""])}
             className="mt-2 text-xs font-semibold text-gold hover:underline"
           >
-            + Lisää videolinkki
+            + Lisää linkki
           </button>
         )}
       </div>
