@@ -128,8 +128,8 @@ export default function StoryForm({
   );
   const [minAge, setMinAge] = useState<number>(story?.min_age ?? 0);
   const [moods, setMoods] = useState<string[]>(story?.moods ?? []);
-  const [sourceBasis, setSourceBasis] = useState<SourceBasis | "">(
-    story?.source_basis ?? ""
+  const [sourceBasis, setSourceBasis] = useState<string[]>(
+    story?.source_basis ?? []
   );
 
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +195,7 @@ export default function StoryForm({
       year_end: ye,
       min_age: minAge,
       moods,
-      source_basis: sourceBasis || null,
+      source_basis: sourceBasis as SourceBasis[],
     };
 
     const { error: dbErr } = story
@@ -434,15 +434,13 @@ export default function StoryForm({
           </div>
         </Field>
 
-        <Field label="Lähdepohja">
+        <Field label="Lähdepohja (voit valita useita)">
           <div className="flex flex-wrap gap-2">
             {SOURCE_BASES.map((s) => (
               <Chip
                 key={s.value}
-                on={sourceBasis === s.value}
-                onClick={() =>
-                  setSourceBasis(sourceBasis === s.value ? "" : s.value)
-                }
+                on={sourceBasis.includes(s.value)}
+                onClick={() => setSourceBasis(toggle(sourceBasis, s.value))}
               >
                 {s.label}
               </Chip>

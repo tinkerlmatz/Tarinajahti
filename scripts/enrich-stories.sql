@@ -53,8 +53,8 @@ alter table public.stories
 alter table public.stories
   add column if not exists moods text[] not null default '{}';
 
--- 7) Lähdepohja (yksi arvo, nullable).
+-- 7) Lähdepohja (monivalinta, kontrolloitu sanasto UI:ssa).
+--    HUOM: tämä oli alun perin yksi arvo; ks. source-basis-multi.sql jos
+--    kanta on jo migratoitu vanhalla (skalaari) versiolla.
 alter table public.stories
-  add column if not exists source_basis text
-    check (source_basis is null or source_basis in
-      ('dokumentoitu', 'muistitieto', 'perimatieto', 'tulkinta', 'huhu'));
+  add column if not exists source_basis text[] not null default '{}';

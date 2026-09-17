@@ -75,7 +75,7 @@ export type Story = {
   year_end: number | null;
   min_age: number;
   moods: string[];
-  source_basis: SourceBasis | null;
+  source_basis: SourceBasis[];
   created_by: string | null;
   created_at: string;
 };
@@ -183,7 +183,7 @@ export type StoryInsert = {
   year_end?: number | null;
   min_age?: number;
   moods?: string[];
-  source_basis?: SourceBasis | null;
+  source_basis?: SourceBasis[];
   created_by?: string | null;
   created_at?: string;
 };
