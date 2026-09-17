@@ -368,8 +368,12 @@ export default function PlayView({
   async function endSession() {
     ended.current = true;
     finalizeSegments(Date.now()); // kirjaa keskeneräinen + ratkaise odottava ikkuna
-    const walkXp = walkXpFrom(accWalk.current);
-    const cycleXp = cycleXpFrom(accCycle.current);
+    // Km-pisteet lasketaan KUMULATIIVISESTA kokonaismatkasta (annetaan vain erotus
+    // jo ansaittuun), jotta alle kilometrin jäännökset säilyvät jahdista toiseen.
+    const walkXp =
+      walkXpFrom(baseWalk + accWalk.current) - walkXpFrom(baseWalk);
+    const cycleXp =
+      cycleXpFrom(baseCycle + accCycle.current) - cycleXpFrom(baseCycle);
     const distXp = walkXp + cycleXp;
 
     // Level up km-pisteiden lisäyksestä.
