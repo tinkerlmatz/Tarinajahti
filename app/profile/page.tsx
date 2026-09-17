@@ -4,6 +4,7 @@ import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import ProfileActions from "@/components/profile/ProfileActions";
 import UsernameEditor from "@/components/profile/UsernameEditor";
+import ContactEmailEditor from "@/components/profile/ContactEmailEditor";
 import { getLevel } from "@/lib/levels";
 import type { Profile } from "@/types/database";
 
@@ -163,6 +164,12 @@ export default async function ProfilePage() {
             </div>
           )}
         </section>
+
+        {/* Yhteystieto: vapaaehtoinen sähköposti */}
+        <ContactEmailEditor
+          initialEmail={profile?.contact_email ?? null}
+          userId={user.id}
+        />
 
         {/* Admin-linkki */}
         {profile?.is_admin && (

@@ -66,6 +66,7 @@ export type Profile = {
   is_admin: boolean;
   birth_year: number | null;
   gender: Gender | null;
+  contact_email: string | null;
   created_at: string;
 };
 
@@ -166,6 +167,7 @@ export type ProfileInsert = {
   is_admin?: boolean;
   birth_year?: number | null;
   gender?: Gender | null;
+  contact_email?: string | null;
   created_at?: string;
 };
 
