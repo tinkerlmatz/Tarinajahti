@@ -64,6 +64,9 @@ const MOODS: { value: string; label: string }[] = [
   { value: "koskettava", label: "Koskettava" },
   { value: "yllattava", label: "Yllättävä" },
   { value: "nostalginen", label: "Nostalginen" },
+  { value: "innostava", label: "Innostava" },
+  { value: "pelottava", label: "Pelottava" },
+  { value: "rauhoittava", label: "Rauhoittava" },
 ];
 
 const SOURCE_BASES: { value: SourceBasis; label: string }[] = [
