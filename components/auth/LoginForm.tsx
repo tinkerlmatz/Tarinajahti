@@ -35,6 +35,8 @@ export default function LoginForm({
   const [username, setUsername] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [gender, setGender] = useState("");
+  // Honeypot: näkymätön kenttä. Ihminen jättää tyhjäksi, botti täyttää.
+  const [website, setWebsite] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -69,6 +71,13 @@ export default function LoginForm({
     e.preventDefault();
     reset();
     setLoading(true);
+
+    // Honeypot: jos näkymätön kenttä on täytetty, kyseessä on lähes varmasti
+    // botti. Keskeytetään hiljaisesti luomatta tiliä (ei paljasteta syytä).
+    if (website.trim() !== "") {
+      setLoading(false);
+      return;
+    }
 
     if (mode === "signin") {
       const { error } = await supabase.auth.signInWithPassword({
@@ -158,6 +167,24 @@ export default function LoginForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-4">
+      {/* Honeypot: piilotettu botteja varten. Ei näy käyttäjälle eikä
+          ruudunlukijalle, eikä ole tab-järjestyksessä. */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          width: "1px",
+          height: "1px",
+          opacity: 0,
+        }}
+      />
       <div className="space-y-3">
         <input
           type="text"
