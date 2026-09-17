@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import Countdown from "@/components/Countdown";
 import AreaVoteButton from "@/components/gameboard/AreaVoteButton";
 import ShowAreaButton from "@/components/gameboard/ShowAreaButton";
+import ReportBugButton from "@/components/gameboard/ReportBugButton";
 import type { GameBoard, AreaSuggestion } from "@/types/database";
 
 // Tarinoiden vähimmäismäärä ennen kuin alue on pelattavissa.
@@ -183,6 +184,7 @@ export default async function GameBoardPage() {
                     <ShowAreaButton boundary={board.boundary} title={board.name} />
                   </div>
                 ) : null}
+                <ReportBugButton boardName={board.name} />
               </div>
             ))}
           </section>
